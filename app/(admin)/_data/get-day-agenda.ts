@@ -12,12 +12,12 @@ export interface AgendaBooking {
     price: number
     durationMinutes: number
   }
+  barberName: string | null
   customer: {
     id: string
-    name: string | null
-    email: string
-    image: string | null
-    phone: string | null
+    name: string
+    email: string | null
+    phone: string
   }
 }
 
@@ -43,6 +43,7 @@ export const getDayAgenda = async (barbershopId: string, date: Date) => {
         id: true,
         date: true,
         status: true,
+        barber: { select: { name: true } },
         service: {
           select: {
             id: true,
@@ -51,14 +52,8 @@ export const getDayAgenda = async (barbershopId: string, date: Date) => {
             durationMinutes: true,
           },
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            phone: true,
-          },
+        customer: {
+          select: { id: true, name: true, email: true, phone: true },
         },
       },
     }),
@@ -77,6 +72,7 @@ export const getDayAgenda = async (barbershopId: string, date: Date) => {
     id: booking.id,
     date: booking.date,
     status: booking.status,
+    barberName: booking.barber?.name ?? null,
     service: {
       id: booking.service.id,
       name: booking.service.name,
@@ -84,11 +80,10 @@ export const getDayAgenda = async (barbershopId: string, date: Date) => {
       durationMinutes: booking.service.durationMinutes,
     },
     customer: {
-      id: booking.user.id,
-      name: booking.user.name,
-      email: booking.user.email,
-      image: booking.user.image,
-      phone: booking.user.phone,
+      id: booking.customer.id,
+      name: booking.customer.name,
+      email: booking.customer.email,
+      phone: booking.customer.phone,
     },
   }))
 

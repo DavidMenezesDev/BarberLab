@@ -3,15 +3,21 @@
 import { cn } from "@/app/_lib/utils"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ADMIN_NAV_ITEMS } from "./admin-nav"
+import { navItemsFor } from "./admin-nav"
 
-const AdminTabBar = () => {
+const AdminTabBar = ({ isOwner }: { isOwner: boolean }) => {
   const pathname = usePathname()
+  const items = navItemsFor(isOwner)
 
   return (
     <nav className="bg-card/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden">
-      <div className="grid grid-cols-4">
-        {ADMIN_NAV_ITEMS.map((item) => {
+      <div
+        className="grid"
+        style={{
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {items.map((item) => {
           const Icon = item.icon
           const active = pathname.startsWith(item.href)
           return (

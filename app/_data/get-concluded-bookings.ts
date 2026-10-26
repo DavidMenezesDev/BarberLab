@@ -1,15 +1,14 @@
 "use server"
 
-import { getServerSession } from "next-auth"
 import { db } from "../_lib/prisma"
-import { authOptions } from "../_lib/auth"
+import { getCurrentCustomerId } from "../_lib/customer-session"
 
 export const getConcludedBookings = async () => {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return []
+  const customerId = await getCurrentCustomerId()
+  if (!customerId) return []
   const bookings = await db.booking.findMany({
     where: {
-      userId: (session.user as { id: string }).id,
+      customerId,
       date: {
         lt: new Date(),
       },
@@ -17,6 +16,7 @@ export const getConcludedBookings = async () => {
     select: {
       id: true,
       date: true,
+      customer: { select: { name: true } },
       service: {
         select: {
           name: true,
@@ -43,6 +43,7 @@ export const getConcludedBookings = async () => {
 const toBookingItem = (booking: {
   id: string
   date: Date
+  customer: { name: string }
   service: {
     name: string
     price: unknown
@@ -56,6 +57,7 @@ const toBookingItem = (booking: {
 }) => ({
   id: booking.id,
   date: booking.date,
+  customerName: booking.customer.name,
   service: {
     name: booking.service.name,
     price: Number(booking.service.price),

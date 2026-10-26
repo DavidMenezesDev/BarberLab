@@ -1,10 +1,21 @@
 //import { PrismaClient } from "../app/generated/prisma"
 //const { PrismaClient } = require("@prisma/client");
 
+import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 
+const slugify = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+
 async function seedDatabase() {
-  const prisma = new PrismaClient()
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  })
   try {
     const images = [
       "https://utfs.io/f/c97a2dc9-cf62-468b-a851-bfd2bdde775f-16p.png",
@@ -150,6 +161,7 @@ async function seedDatabase() {
       const barbershop = await prisma.barbershop.create({
         data: {
           name,
+          slug: `${slugify(name)}-${i + 1}`,
           address,
           phones: ["(11) 99999-9999"],
           description: descriptions[i],

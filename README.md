@@ -68,4 +68,4 @@ https://www.figma.com/design/KKq1t6YEm0WtAlOJbLLe5h/BarberLaB?node-id=1-9&t=ffjK
 - Node.js (v16+ recomendada)  
 - pnpm (recomendado), npm, yarn ou bun
 - Banco de Dados compatível com Prisma (PostgreSQL recomendado)
-- Configuração do google developer console para autenticação
+- Variáveis de ambiente: `DATABASE_URL`, `NEXTAUTH_URL` e `NEXTAUTH_SECRET` (ou `NEXT_AUTH_SECRET`, com 32+ caracteres). O acesso ao painel é por e-mail e senha.

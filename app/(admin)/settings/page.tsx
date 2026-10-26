@@ -1,4 +1,4 @@
-import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { requireBarbershopOwner } from "@/app/_lib/auth"
 import { withDefaults } from "@/app/_lib/opening-hours"
 import { db } from "@/app/_lib/prisma"
 import type { Metadata } from "next"
@@ -6,6 +6,8 @@ import { notFound, redirect } from "next/navigation"
 import BarbershopProfileForm from "../_components/barbershop-profile-form"
 import OpeningHoursForm from "../_components/opening-hours-form"
 import PageHeader from "../_components/page-header"
+import StaffManager from "../_components/staff-manager"
+import { StaffRole } from "@prisma/client"
 
 export const metadata: Metadata = {
   title: "Configurações | Barber Lab",
@@ -13,10 +15,10 @@ export const metadata: Metadata = {
 }
 
 const Settings = async () => {
-  const admin = await requireBarbershopAdmin()
-  if (!admin) redirect("/")
+  const admin = await requireBarbershopOwner()
+  if (!admin) redirect("/dashboard")
 
-  const [barbershop, salvos] = await Promise.all([
+  const [barbershop, salvos, staff, invites] = await Promise.all([
     db.barbershop.findUnique({
       where: { id: admin.barbershopId },
       select: {
@@ -31,6 +33,20 @@ const Settings = async () => {
       where: { barbershopId: admin.barbershopId },
       orderBy: { weekday: "asc" },
       select: { weekday: true, opensAt: true, closesAt: true, isClosed: true },
+    }),
+    db.user.findMany({
+      where: { barbershopId: admin.barbershopId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true, email: true, staffRole: true },
+    }),
+    db.staffInvite.findMany({
+      where: {
+        barbershopId: admin.barbershopId,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, email: true, token: true, expiresAt: true },
     }),
   ])
 
@@ -61,6 +77,28 @@ const Settings = async () => {
         />
 
         <OpeningHoursForm hours={withDefaults(salvos)} />
+      </section>
+
+      <section className="space-y-6">
+        <PageHeader
+          eyebrow="Configurações"
+          title="Acesso da equipe"
+          description="Quem pode entrar no painel desta barbearia."
+        />
+
+        <StaffManager
+          members={staff.map((member) => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            isOwner: member.staffRole === StaffRole.OWNER,
+            isSelf: member.id === admin.userId,
+          }))}
+          invites={invites.map((invite) => ({
+            ...invite,
+            expiresAt: invite.expiresAt.toISOString(),
+          }))}
+        />
       </section>
     </div>
   )

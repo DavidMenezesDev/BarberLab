@@ -25,7 +25,7 @@ function createPrismaClient(): PrismaClient {
 
     globalThis.cachedPool = new Pool({
       connectionString: url.toString(),
-      ssl: true,
+      ssl: !/^(localhost|127\.0\.0\.1)$/.test(url.hostname),
     })
   }
 

@@ -58,7 +58,7 @@ const CHECAGENS: Checagem[] = [
       (!process.env.NEXTAUTH_URL ||
         process.env.NEXTAUTH_URL.includes("localhost")),
     mensagem: () =>
-      `NEXTAUTH_URL em produção está como "${process.env.NEXTAUTH_URL ?? "não definido"}": o login pelo Google volta para o endereço errado.`,
+      `NEXTAUTH_URL em produção está como "${process.env.NEXTAUTH_URL ?? "não definido"}": o login do painel volta para o endereço errado.`,
   },
   {
     nivel: "aviso",

@@ -7,12 +7,18 @@ export const getBarbershopsById = async (barbershopId: string) => {
     return null
   }
 
-  return db.barbershop.findUnique({
+  return db.barbershop.findFirst({
+    // A URL pública usa o slug; o id continua valendo para links antigos.
     where: {
-      id: barbershopId,
+      OR: [{ id: barbershopId }, { slug: barbershopId }],
     },
     include: {
       services: true,
+      barbers: {
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, specialty: true, imageUrl: true },
+      },
     },
   })
 }

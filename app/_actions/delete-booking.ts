@@ -3,13 +3,17 @@
 import { Role } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { auth } from "../_lib/auth"
+import { getCurrentCustomerId } from "../_lib/customer-session"
 import { db } from "../_lib/prisma"
 
 export const deleteBooking = async (bookingId: string) => {
-  const session = await auth()
+  const [session, customerId] = await Promise.all([
+    auth(),
+    getCurrentCustomerId(),
+  ])
 
-  if (!session?.user) {
-    return { ok: false as const, error: "Você precisa estar logado." }
+  if (!session?.user && !customerId) {
+    return { ok: false as const, error: "Reserva não encontrada." }
   }
 
   if (typeof bookingId !== "string" || bookingId.length === 0) {
@@ -19,7 +23,7 @@ export const deleteBooking = async (bookingId: string) => {
   const booking = await db.booking.findUnique({
     where: { id: bookingId },
     select: {
-      userId: true,
+      customerId: true,
       service: { select: { barbershopId: true } },
     },
   })
@@ -28,9 +32,9 @@ export const deleteBooking = async (bookingId: string) => {
     return { ok: false as const, error: "Reserva não encontrada." }
   }
 
-  const isOwner = booking.userId === session.user.id
+  const isOwner = !!customerId && booking.customerId === customerId
   const isBarbershopAdmin =
-    session.user.role === Role.BARBER_ADMIN &&
+    session?.user?.role === Role.BARBER_ADMIN &&
     session.user.barbershopId === booking.service.barbershopId
 
   if (!isOwner && !isBarbershopAdmin) {

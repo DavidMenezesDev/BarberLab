@@ -9,12 +9,14 @@ interface BookingSummaryProps {
   service: { name: string; price: number | Decimal }
   barbershop: Pick<Barbershop, "name">
   selectedDate: Date
+  barberName?: string
 }
 
 const BookingSummary = ({
   service,
   barbershop,
   selectedDate,
+  barberName,
 }: BookingSummaryProps) => {
   return (
     <Card>
@@ -28,6 +30,13 @@ const BookingSummary = ({
             }).format(Number(service.price))}
           </p>
         </div>
+
+        {barberName && (
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm text-gray-400">Barbeiro</h2>
+            <p className="text-sm">{barberName}</p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <h2 className="text-sm text-gray-400">Data</h2>

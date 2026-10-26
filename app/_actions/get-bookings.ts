@@ -2,13 +2,13 @@
 
 import { BookingStatus } from "@prisma/client"
 import { addMinutes, endOfDay, startOfDay } from "date-fns"
-import { auth } from "../_lib/auth"
 import { db } from "../_lib/prisma"
 import { withDefaults } from "../_lib/opening-hours"
 import { consumeRateLimit, getClientIp } from "../_lib/rate-limit"
 
 interface GetUnavailableIntervalsProps {
   serviceId: string
+  barberId?: string
   date: Date
 }
 
@@ -19,12 +19,10 @@ export interface UnavailableInterval {
 
 export const getUnavailableIntervals = async ({
   serviceId,
+  barberId,
   date,
 }: GetUnavailableIntervalsProps): Promise<UnavailableInterval[]> => {
-  const session = await auth()
-  if (!session?.user) return []
-
-  const limit = await consumeRateLimit("readSchedule", session.user.id)
+  const limit = await consumeRateLimit("readSchedule", await getClientIp())
   if (!limit.allowed) return []
 
   const service = await db.barbershopService.findUnique({
@@ -42,6 +40,8 @@ export const getUnavailableIntervals = async ({
         date: { gte: from, lte: to },
         status: { not: BookingStatus.CANCELED },
         service: { barbershopId: service.barbershopId },
+        // Reservas antigas, sem barbeiro, seguem ocupando a barbearia toda.
+        ...(barberId && { OR: [{ barberId }, { barberId: null }] }),
       },
       select: {
         date: true,

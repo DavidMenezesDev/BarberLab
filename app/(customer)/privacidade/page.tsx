@@ -40,17 +40,21 @@ const Privacidade = () => {
 
       <Section title="Dados que coletamos">
         <p>
-          <strong className="text-foreground">Da sua conta Google:</strong>{" "}
-          nome, e-mail e foto de perfil. Não recebemos sua senha em momento
-          algum — a autenticação acontece no Google.
+          <strong className="text-foreground">Ao agendar:</strong> nome e
+          telefone (obrigatórios) e, se você quiser, e-mail e data de
+          aniversário. Você não precisa criar conta.
+        </p>
+        <p>
+          <strong className="text-foreground">
+            Do cadastro de barbearias e equipes:
+          </strong>{" "}
+          nome, e-mail, telefone e senha de acesso ao painel, além dos dados da
+          empresa (como cidade e CPF ou CNPJ, quando informado). A senha é
+          guardada de forma criptografada e não conseguimos vê-la.
         </p>
         <p>
           <strong className="text-foreground">Dos seus agendamentos:</strong>{" "}
           serviço escolhido, data, horário, barbearia e situação do atendimento.
-        </p>
-        <p>
-          <strong className="text-foreground">Telefone:</strong> apenas se você
-          informar, para que a barbearia possa confirmar ou lembrar do horário.
         </p>
         <p>
           Não coletamos dados de pagamento: os atendimentos são pagos
@@ -60,10 +64,9 @@ const Privacidade = () => {
 
       <Section title="Para que usamos">
         <p>
-          Para criar e manter sua conta, registrar e exibir seus agendamentos,
-          permitir que a barbearia organize a agenda e para contato relacionado
-          a um horário marcado. Não vendemos seus dados nem os usamos para
-          publicidade de terceiros.
+          Para registrar e exibir seus agendamentos, permitir que a barbearia
+          organize a agenda e para contato relacionado a um horário marcado. Não
+          vendemos seus dados nem os usamos para publicidade de terceiros.
         </p>
       </Section>
 
@@ -71,8 +74,8 @@ const Privacidade = () => {
         <p>
           Com a barbearia do seu agendamento (nome, e-mail, telefone se
           informado, e os dados da reserva) e com os provedores de
-          infraestrutura necessários para o sistema funcionar: Google, para
-          autenticação; Vercel, para hospedagem; e Neon, para o banco de dados.
+          infraestrutura necessários para o sistema funcionar: Vercel, para
+          hospedagem; e Neon, para o banco de dados.
         </p>
         <p>
           Ao usar o botão de WhatsApp, a mensagem é aberta no seu próprio

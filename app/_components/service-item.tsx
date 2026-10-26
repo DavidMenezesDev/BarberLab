@@ -11,12 +11,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "./ui/sheet"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Calendar } from "./ui/calendar"
 import { ptBR } from "date-fns/locale"
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { addMinutes, isPast, set } from "date-fns"
 import { createBooking } from "../_actions/create-booking"
-import { useSession } from "next-auth/react"
+import { getSavedCustomer } from "../_actions/customer"
 import { toast } from "sonner"
 import {
   getServiceOpeningHours,
@@ -29,17 +30,24 @@ import {
   isClosedOn,
   type OpeningHourSlot,
 } from "../_lib/opening-hours"
-import { Dialog, DialogContent } from "./ui/dialog"
-import SignInDialog from "./sign-in-dialog"
+import CustomerFields from "./customer-fields"
 import BookingSummary from "./booking-summary"
 import {
   buildCustomerConfirmationMessage,
   buildWhatsAppUrl,
 } from "../_lib/whatsapp"
 
+export interface BarberOption {
+  id: string
+  name: string
+  specialty: string | null
+  imageUrl: string | null
+}
+
 interface ServiceItemProps {
   service: BarbershopService
   barbershop: Pick<Barbershop, "name" | "phones">
+  barbers?: BarberOption[]
 }
 
 interface GetTimeListProps {
@@ -78,9 +86,20 @@ const getTimeList = ({
   })
 }
 
-const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
-  const { data } = useSession()
-  const [signInDialogIsOpen, setSignInDialogIsOpen] = useState(false)
+const ServiceItem = ({
+  service,
+  barbershop,
+  barbers = [],
+}: ServiceItemProps) => {
+  const [customer, setCustomer] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    birthDate: "",
+  })
+  const [selectedBarberId, setSelectedBarberId] = useState<string | undefined>(
+    undefined,
+  )
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | undefined>(
     undefined,
@@ -91,15 +110,25 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [isCreating, startCreating] = useTransition()
 
+  const needsBarber = barbers.length > 0
+  const selectedBarber = barbers.find(
+    (barber) => barber.id === selectedBarberId,
+  )
+  const barberStepDone = !needsBarber || !!selectedBarber
+
   useEffect(() => {
-    if (!selectedDay) return
+    if (!selectedDay || !barberStepDone) return
 
     let current = true
     setIsLoadingSlots(true)
 
     const load = async () => {
       const [intervals, hours] = await Promise.all([
-        getUnavailableIntervals({ date: selectedDay, serviceId: service.id }),
+        getUnavailableIntervals({
+          date: selectedDay,
+          serviceId: service.id,
+          barberId: selectedBarberId,
+        }),
         getServiceOpeningHours(service.id),
       ])
       if (!current) return
@@ -112,7 +141,7 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
     return () => {
       current = false
     }
-  }, [selectedDay, service.id])
+  }, [selectedDay, service.id, selectedBarberId, barberStepDone])
 
   const selectedDate = useMemo(() => {
     if (!selectedDay || !selectedTime) return
@@ -123,13 +152,20 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
   }, [selectedDay, selectedTime])
 
   const handleBookingClick = () => {
-    if (data?.user) {
-      return setBookingSheetIsOpen(true)
-    }
-    return setSignInDialogIsOpen(true)
+    setBookingSheetIsOpen(true)
+    getSavedCustomer().then((saved) => {
+      if (saved) setCustomer(saved)
+    })
+  }
+
+  const handleBarberSelect = (barberId: string | undefined) => {
+    setSelectedBarberId(barberId)
+    setSelectedTime(undefined)
+    setUnavailable([])
   }
 
   const handleBookingSheetOpenChange = () => {
+    setSelectedBarberId(undefined)
     setSelectedDay(undefined)
     setSelectedTime(undefined)
     setUnavailable([])
@@ -153,7 +189,9 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
         if (!selectedDate) return
         const result = await createBooking({
           serviceId: service.id,
+          barberId: selectedBarberId,
           date: selectedDate,
+          customer,
         })
 
         if (!result.ok) {
@@ -169,7 +207,7 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
             serviceName: service.name,
             date: selectedDate,
             barbershopName: barbershop.name,
-            customerName: data?.user?.name,
+            customerName: customer.name.trim(),
             price: Number(service.price),
           }),
         })
@@ -249,49 +287,119 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
                   </SheetHeader>
 
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                    <div className="border-b border-solid px-5 py-5">
-                      <Calendar
-                        mode="single"
-                        locale={ptBR}
-                        selected={selectedDay}
-                        onSelect={handleDateSelect}
-                        disabled={(date: Date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
-                        className="w-full"
-                        styles={{
-                          root: {
-                            width: "100%",
-                          },
-                          table: {
-                            width: "100%",
-                          },
-                          head_cell: {
-                            width: "100%",
-                            textTransform: "capitalize",
-                          },
-                          cell: {
-                            width: "100%",
-                          },
-                          button: {
-                            width: "100%",
-                          },
-                          nav_button_previous: {
-                            width: "32px",
-                            height: "32px",
-                          },
-                          nav_button_next: {
-                            width: "32px",
-                            height: "32px",
-                          },
-                          caption: {
-                            textTransform: "capitalize",
-                          },
-                        }}
-                      />
-                    </div>
+                    {needsBarber && !selectedBarber && (
+                      <div className="space-y-3 px-5 py-5">
+                        <h3 className="text-sm font-semibold">
+                          Com quem você quer cortar?
+                        </h3>
+                        <div className="space-y-2">
+                          {barbers.map((barber) => (
+                            <button
+                              key={barber.id}
+                              type="button"
+                              onClick={() => handleBarberSelect(barber.id)}
+                              className="hover:bg-secondary/60 flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors"
+                            >
+                              <Avatar className="h-12 w-12">
+                                {barber.imageUrl && (
+                                  <AvatarImage
+                                    src={barber.imageUrl}
+                                    alt={barber.name}
+                                  />
+                                )}
+                                <AvatarFallback>
+                                  {barber.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold">
+                                  {barber.name}
+                                </p>
+                                {barber.specialty && (
+                                  <p className="text-muted-foreground truncate text-xs">
+                                    {barber.specialty}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                    {selectedDay && (
+                    {selectedBarber && (
+                      <div className="flex items-center justify-between gap-3 border-b border-solid px-5 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            {selectedBarber.imageUrl && (
+                              <AvatarImage
+                                src={selectedBarber.imageUrl}
+                                alt={selectedBarber.name}
+                              />
+                            )}
+                            <AvatarFallback>
+                              {selectedBarber.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <p className="truncate text-sm font-semibold">
+                            {selectedBarber.name}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleBarberSelect(undefined)}
+                        >
+                          Trocar
+                        </Button>
+                      </div>
+                    )}
+
+                    {barberStepDone && (
+                      <div className="border-b border-solid px-5 py-5">
+                        <Calendar
+                          mode="single"
+                          locale={ptBR}
+                          selected={selectedDay}
+                          onSelect={handleDateSelect}
+                          disabled={(date: Date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0))
+                          }
+                          className="w-full"
+                          styles={{
+                            root: {
+                              width: "100%",
+                            },
+                            table: {
+                              width: "100%",
+                            },
+                            head_cell: {
+                              width: "100%",
+                              textTransform: "capitalize",
+                            },
+                            cell: {
+                              width: "100%",
+                            },
+                            button: {
+                              width: "100%",
+                            },
+                            nav_button_previous: {
+                              width: "32px",
+                              height: "32px",
+                            },
+                            nav_button_next: {
+                              width: "32px",
+                              height: "32px",
+                            },
+                            caption: {
+                              textTransform: "capitalize",
+                            },
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {barberStepDone && selectedDay && (
                       <div className="border-b border-solid p-5">
                         {isLoadingSlots ? (
                           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -333,6 +441,21 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
                           barbershop={barbershop}
                           service={service}
                           selectedDate={selectedDate}
+                          barberName={selectedBarber?.name}
+                        />
+                      </div>
+                    )}
+
+                    {selectedDate && (
+                      <div className="border-t border-solid p-5">
+                        <h3 className="mb-3 text-sm font-semibold">
+                          Seus dados
+                        </h3>
+                        <CustomerFields
+                          idPrefix={`reserva-${service.id}`}
+                          value={customer}
+                          onChange={setCustomer}
+                          disabled={isCreating}
                         />
                       </div>
                     )}
@@ -342,7 +465,13 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
                     <Button
                       className="w-full"
                       onClick={handleCreateBooking}
-                      disabled={!selectedDay || !selectedTime || isCreating}
+                      disabled={
+                        !selectedDay ||
+                        !selectedTime ||
+                        !customer.name.trim() ||
+                        !customer.phone.trim() ||
+                        isCreating
+                      }
                     >
                       {isCreating ? "Confirmando..." : "Confirmar"}
                     </Button>
@@ -353,15 +482,6 @@ const ServiceItem = ({ service, barbershop }: ServiceItemProps) => {
           </div>
         </CardContent>
       </Card>
-
-      <Dialog
-        open={signInDialogIsOpen}
-        onOpenChange={(open) => setSignInDialogIsOpen(open)}
-      >
-        <DialogContent className="w-[90%]">
-          <SignInDialog />
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

@@ -1,13 +1,13 @@
 "use server"
 
-import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { requireBarbershopOwner } from "@/app/_lib/auth"
 import { db } from "@/app/_lib/prisma"
 import { revalidatePath } from "next/cache"
 import { openingHoursSchema } from "../_lib/opening-hours-schema"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
 
 export const saveOpeningHours = async (input: unknown) => {
-  const admin = await requireBarbershopAdmin()
+  const admin = await requireBarbershopOwner()
   if (!admin) {
     return { ok: false as const, error: "Acesso negado." }
   }

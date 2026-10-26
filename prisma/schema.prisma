@@ -11,6 +11,11 @@ enum Role {
   BARBER_ADMIN
 }
 
+enum StaffRole {
+  OWNER
+  BARBER
+}
+
 enum BookingStatus {
   CONFIRMED
   COMPLETED
@@ -24,18 +29,33 @@ model User {
   email            String      @unique
   emailVerified    DateTime?
   image            String?
+  passwordHash     String?
+  barber           Barber?
   phone            String?
   role             Role        @default(CUSTOMER)
+  staffRole        StaffRole?
   onboardingDoneAt DateTime?
   barbershopId     String?
   barbershop       Barbershop? @relation("BarbershopStaff", fields: [barbershopId], references: [id], onDelete: SetNull)
   accounts         Account[]
   sessions         Session[]
-  bookings         Booking[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
   @@index([barbershopId])
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  birthDate DateTime? @db.Date
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([phone])
 }
 
 model Account {
@@ -95,7 +115,10 @@ model OpeningHour {
 model Barbershop {
   id           String              @id @default(uuid())
   name         String
+  slug         String              @unique
   address      String
+  city         String?
+  document     String?
   phones       String[]
   description  String
   imageUrl     String
@@ -105,6 +128,39 @@ model Barbershop {
   staff        User[]              @relation("BarbershopStaff")
   blocks       ScheduleBlock[]
   openingHours OpeningHour[]
+  barbers      Barber[]
+  invites      StaffInvite[]
+}
+
+model StaffInvite {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  email        String
+  token        String     @unique
+  role         StaffRole  @default(BARBER)
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([barbershopId])
+}
+
+model Barber {
+  id           String     @id @default(uuid())
+  name         String
+  specialty    String?
+  imageUrl     String?
+  isActive     Boolean    @default(true)
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  userId       String?    @unique
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings     Booking[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([barbershopId, isActive])
 }
 
 model BarbershopService {
@@ -125,18 +181,21 @@ model BarbershopService {
 }
 
 model Booking {
-  id        String            @id @default(uuid())
-  userId    String
-  user      User              @relation(fields: [userId], references: [id])
-  serviceId String
-  service   BarbershopService @relation(fields: [serviceId], references: [id])
-  date      DateTime
-  status    BookingStatus     @default(CONFIRMED)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id         String            @id @default(uuid())
+  customerId String
+  customer   Customer          @relation(fields: [customerId], references: [id])
+  serviceId  String
+  service    BarbershopService @relation(fields: [serviceId], references: [id])
+  barberId   String?
+  barber     Barber?           @relation(fields: [barberId], references: [id], onDelete: SetNull)
+  date       DateTime
+  status     BookingStatus     @default(CONFIRMED)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   @@index([serviceId, date])
-  @@index([userId, date])
+  @@index([customerId, date])
+  @@index([barberId, date])
 }
 
 model ScheduleBlock {

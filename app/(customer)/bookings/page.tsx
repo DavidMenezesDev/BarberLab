@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
-import { getServerSession } from "next-auth"
 import Header from "@/app/_components/header"
-import { authOptions } from "@/app/_lib/auth"
+import { getCurrentCustomerId } from "@/app/_lib/customer-session"
 import BookingItem from "@/app/_components/booking-item"
 import BookingHistory from "../_components/booking-history"
 import { getConfirmedBookings } from "@/app/_data/get-confirmed-bookings"
@@ -41,15 +40,16 @@ export const metadata: Metadata = {
 }
 
 const Bookings = async () => {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
+  const customerId = await getCurrentCustomerId()
+  if (!customerId) {
     return (
       <>
         <Header />
         <div className="space-y-3 p-5">
           <h1 className="text-xl font-bold">Agendamentos</h1>
           <p className="text-gray-400">
-            Você precisa estar logado para ver seus agendamentos.
+            Você ainda não fez nenhum agendamento neste aparelho. Seus horários
+            aparecem aqui depois da primeira reserva.
           </p>
         </div>
       </>

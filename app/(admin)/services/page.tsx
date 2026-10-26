@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { requireBarbershopOwner } from "@/app/_lib/auth"
 import { BanknoteIcon, ClockIcon, ScissorsIcon } from "lucide-react"
 import { redirect } from "next/navigation"
 import PageHeader from "../_components/page-header"
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 }
 
 const Services = async () => {
-  const admin = await requireBarbershopAdmin()
-  if (!admin) redirect("/")
+  const admin = await requireBarbershopOwner()
+  if (!admin) redirect("/dashboard")
 
   const services = await getAdminServices(admin.barbershopId)
   const active = services.filter((service) => service.isActive)

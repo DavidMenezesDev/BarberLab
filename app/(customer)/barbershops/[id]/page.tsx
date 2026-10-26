@@ -32,7 +32,7 @@ export default async function BarbershopPage({ params }: any) {
     return notFound()
   }
 
-  const openingHours = await getBarbershopOpeningHours(id)
+  const openingHours = await getBarbershopOpeningHours(barbershop.id)
 
   return (
     <BarbershopDetail barbershop={barbershop} openingHours={openingHours} />

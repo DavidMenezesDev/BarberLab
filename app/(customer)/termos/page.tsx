@@ -29,9 +29,10 @@ const Termos = () => {
 
       <Section title="Conta de acesso">
         <p>
-          O acesso é feito com uma conta Google. Você é responsável por manter
-          essa conta segura e pelos agendamentos feitos por ela. Se identificar
-          uso indevido, avise pelo{" "}
+          Clientes agendam sem conta, informando nome e telefone. O painel da
+          barbearia é acessado com e-mail e senha: você é responsável por manter
+          a senha em segurança e pelas ações feitas com ela. Se identificar uso
+          indevido, avise pelo{" "}
           <Link href="/contato" className="text-primary hover:underline">
             contato
           </Link>

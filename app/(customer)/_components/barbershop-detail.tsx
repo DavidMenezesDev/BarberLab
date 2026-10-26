@@ -1,6 +1,6 @@
 import { WEEKDAY_LABELS, type OpeningHourSlot } from "@/app/_lib/opening-hours"
 import PhoneItem from "@/app/_components/phone-item"
-import ServiceItem from "@/app/_components/service-item"
+import ServiceItem, { type BarberOption } from "@/app/_components/service-item"
 import SidebarSheet from "@/app/_components/sidebar-sheet"
 import { Button } from "@/app/_components/ui/button"
 import { Sheet, SheetTrigger } from "@/app/_components/ui/sheet"
@@ -29,7 +29,10 @@ import {
 import type { Barbershop, BarbershopService } from "@prisma/client"
 
 interface BarbershopDetailProps {
-  barbershop: Barbershop & { services: BarbershopService[] }
+  barbershop: Barbershop & {
+    services: BarbershopService[]
+    barbers: BarberOption[]
+  }
   openingHours: OpeningHourSlot[]
   showHeroNav?: boolean
   singleTenant?: boolean
@@ -222,6 +225,7 @@ const BarbershopDetail = ({
                         key={service.id}
                         barbershop={JSON.parse(JSON.stringify(barbershop))}
                         service={JSON.parse(JSON.stringify(service))}
+                        barbers={barbershop.barbers}
                       />
                     ))}
                   </div>

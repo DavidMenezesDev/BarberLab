@@ -1,10 +1,6 @@
 "use client"
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/app/_components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/app/_components/ui/avatar"
 import { Badge } from "@/app/_components/ui/badge"
 import { Button } from "@/app/_components/ui/button"
 import { Card, CardContent } from "@/app/_components/ui/card"
@@ -38,7 +34,7 @@ const BookingRow = ({
   const [isPending, startTransition] = useTransition()
   const meta = BOOKING_STATUS_META[booking.status]
   const endsAt = addMinutes(booking.date, booking.service.durationMinutes)
-  const customerName = booking.customer.name ?? booking.customer.email
+  const customerName = booking.customer.name
   const isClosed = booking.status !== BookingStatus.CONFIRMED
 
   const changeStatus = (status: BookingStatus, successMessage: string) => {
@@ -83,6 +79,7 @@ const BookingRow = ({
             <span className="text-muted-foreground text-xs">
               {formatDuration(booking.service.durationMinutes)} ·{" "}
               {formatCurrency(booking.service.price)}
+              {booking.barberName && ` · ${booking.barberName}`}
             </span>
           </div>
 
@@ -90,10 +87,6 @@ const BookingRow = ({
             <h3 className="truncate font-semibold">{booking.service.name}</h3>
             <div className="mt-2 flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage
-                  src={booking.customer.image ?? ""}
-                  alt={customerName}
-                />
                 <AvatarFallback className="text-[10px]">
                   {customerName.charAt(0).toUpperCase()}
                 </AvatarFallback>

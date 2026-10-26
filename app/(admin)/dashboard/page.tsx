@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 const Dashboard = async ({ searchParams }: DashboardProps) => {
   const admin = await requireBarbershopAdmin()
-  if (!admin) redirect("/")
+  if (!admin) redirect("/entrar")
 
   const { date: dateParam } = await searchParams
   const date = parseDateParam(dateParam)

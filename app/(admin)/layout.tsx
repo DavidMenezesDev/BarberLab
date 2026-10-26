@@ -1,5 +1,6 @@
-import { auth, requireBarbershopAdmin } from "@/app/_lib/auth"
+import { requireBarbershopAdmin } from "@/app/_lib/auth"
 import { db } from "@/app/_lib/prisma"
+import { StaffRole } from "@prisma/client"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import AdminSidebar from "./_components/admin-sidebar"
@@ -18,8 +19,8 @@ const AdminLayout = async ({ children }: { children: React.ReactNode }) => {
   const admin = await requireBarbershopAdmin()
 
   if (!admin) {
-    const session = await auth()
-    redirect(session?.user ? "/?erro=acesso-negado" : "/")
+    // Sem barbearia vinculada (ou sem login): o cadastro resolve os dois casos.
+    redirect("/entrar")
   }
 
   const [barbershop, user] = await Promise.all([
@@ -43,17 +44,18 @@ const AdminLayout = async ({ children }: { children: React.ReactNode }) => {
     userName: admin.name,
     userImage: admin.image,
   }
+  const isOwner = admin.staffRole === StaffRole.OWNER
 
   return (
     <div className="min-h-full">
-      <AdminSidebar {...identity} />
+      <AdminSidebar {...identity} isOwner={isOwner} />
       <AdminTopbar {...identity} />
 
       <main className="pb-24 lg:pb-0 lg:pl-64">{children}</main>
 
-      <AdminTabBar />
+      <AdminTabBar isOwner={isOwner} />
 
-      {!user?.onboardingDoneAt && <OnboardingTour />}
+      {isOwner && !user?.onboardingDoneAt && <OnboardingTour />}
     </div>
   )
 }

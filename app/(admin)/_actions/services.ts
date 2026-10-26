@@ -1,6 +1,6 @@
 "use server"
 
-import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { requireBarbershopOwner } from "@/app/_lib/auth"
 import { db } from "@/app/_lib/prisma"
 import { Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
@@ -15,7 +15,7 @@ const revalidateServices = () => {
 }
 
 export const upsertService = async (input: unknown) => {
-  const admin = await requireBarbershopAdmin()
+  const admin = await requireBarbershopOwner()
   if (!admin) {
     return { ok: false as const, error: "Acesso negado." }
   }
@@ -60,7 +60,7 @@ export const setServiceActive = async (
   serviceId: string,
   isActive: boolean,
 ) => {
-  const admin = await requireBarbershopAdmin()
+  const admin = await requireBarbershopOwner()
   if (!admin) {
     return { ok: false as const, error: "Acesso negado." }
   }
@@ -85,7 +85,7 @@ export const setServiceActive = async (
 }
 
 export const deleteService = async (serviceId: string) => {
-  const admin = await requireBarbershopAdmin()
+  const admin = await requireBarbershopOwner()
   if (!admin) {
     return { ok: false as const, error: "Acesso negado." }
   }

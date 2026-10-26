@@ -31,6 +31,11 @@ const PASSOS: Passo[] = [
       "Cadastre o que você faz, com preço e duração. O que estiver ativo aqui é o que o cliente vê na hora de agendar.",
   },
   {
+    marca: "tour-barbers",
+    titulo: "Sua equipe",
+    texto: "Cadastre os barbeiros que atendem na barbearia.",
+  },
+  {
     marca: "tour-settings",
     titulo: "Comece por aqui",
     texto:

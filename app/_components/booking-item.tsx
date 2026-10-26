@@ -33,11 +33,11 @@ import { useState, useTransition } from "react"
 import BookingSummary from "./booking-summary"
 import WhatsAppButton from "./whatsapp-button"
 import { buildCustomerConfirmationMessage } from "../_lib/whatsapp"
-import { useSession } from "next-auth/react"
 
 export interface BookingItemData {
   id: string
   date: Date
+  customerName?: string
   service: {
     name: string
     price: number
@@ -56,7 +56,6 @@ interface BookingItemProps {
 
 const BookingItem = ({ booking }: BookingItemProps) => {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const { data: session } = useSession()
   const [isCanceling, startCanceling] = useTransition()
   const {
     service: { barbershop },
@@ -184,7 +183,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                 serviceName: booking.service.name,
                 date: booking.date,
                 barbershopName: barbershop.name,
-                customerName: session?.user?.name,
+                customerName: booking.customerName,
                 price: Number(booking.service.price),
               })}
             />

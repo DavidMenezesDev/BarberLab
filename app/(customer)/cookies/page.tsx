@@ -47,9 +47,9 @@ const Cookies = () => {
 
       <Section title="Cookies de terceiros">
         <p>
-          A autenticação é feita pelo Google, que define os próprios cookies
-          durante o login, conforme a política de privacidade dele. Não temos
-          acesso nem controle sobre esses cookies.
+          Não usamos cookies de terceiros para autenticação. O login do painel e
+          a lembrança dos seus dados de cliente neste aparelho usam apenas
+          cookies próprios, necessários para o funcionamento do sistema.
         </p>
       </Section>
 

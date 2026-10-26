@@ -8,6 +8,7 @@ import { Button } from "./ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover"
 import { Dialog, DialogTrigger, DialogContent } from "./ui/dialog"
 import UserInfo from "./user-info"
+import Link from "next/link"
 
 const UserMenu = () => {
   const { data: session, status } = useSession()
@@ -49,7 +50,19 @@ const UserMenu = () => {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>{userButton}</DialogTrigger>
+      <Popover>
+        <PopoverTrigger asChild>{userButton}</PopoverTrigger>
+        <PopoverContent className="mt-2 w-56 space-y-2">
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/perfil">Meus dados</Link>
+          </Button>
+          <DialogTrigger asChild>
+            <Button variant="ghost" className="w-full text-xs">
+              Acesso da barbearia
+            </Button>
+          </DialogTrigger>
+        </PopoverContent>
+      </Popover>
       <DialogContent className="w-[90%]">
         <SignInDialog />
       </DialogContent>

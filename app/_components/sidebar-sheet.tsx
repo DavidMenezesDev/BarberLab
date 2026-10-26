@@ -45,19 +45,7 @@ const SidebarSheet = ({ singleTenant = false }: SidebarSheetProps) => {
             </div>
           </div>
         ) : (
-          <>
-            <h2 className="font-bold">Olá, faça seu login!</h2>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="icon">
-                  <LogInIcon />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[90%]">
-                <SignInDialog />
-              </DialogContent>
-            </Dialog>
-          </>
+          <h2 className="font-bold">Olá! Reserve sem precisar de conta.</h2>
         )}
       </div>
 
@@ -76,16 +64,14 @@ const SidebarSheet = ({ singleTenant = false }: SidebarSheetProps) => {
             Agendamentos
           </Link>
         </Button>
-        {data?.user && (
-          <SheetClose asChild>
-            <Button className="justify-start gap-2" variant="ghost" asChild>
-              <Link href="/perfil">
-                <UserIcon size={18} />
-                Meus dados
-              </Link>
-            </Button>
-          </SheetClose>
-        )}
+        <SheetClose asChild>
+          <Button className="justify-start gap-2" variant="ghost" asChild>
+            <Link href="/perfil">
+              <UserIcon size={18} />
+              Meus dados
+            </Link>
+          </Button>
+        </SheetClose>
         <AdminPanelLink className="w-full justify-start gap-2" />
       </div>
 
@@ -109,8 +95,8 @@ const SidebarSheet = ({ singleTenant = false }: SidebarSheetProps) => {
         </div>
       )}
 
-      {data?.user && (
-        <div className="flex flex-col gap-2 py-5">
+      <div className="flex flex-col gap-2 py-5">
+        {data?.user ? (
           <Button
             variant="ghost"
             className="justify-start gap-2"
@@ -119,8 +105,23 @@ const SidebarSheet = ({ singleTenant = false }: SidebarSheetProps) => {
             <LogOutIcon size={18} />
             Sair da conta
           </Button>
-        </div>
-      )}
+        ) : (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                className="text-muted-foreground justify-start gap-2"
+              >
+                <LogInIcon size={18} />
+                Acesso da barbearia
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="w-[90%]">
+              <SignInDialog />
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
     </SheetContent>
   )
 }

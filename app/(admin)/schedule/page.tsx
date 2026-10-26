@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 
 const Schedule = async ({ searchParams }: ScheduleProps) => {
   const admin = await requireBarbershopAdmin()
-  if (!admin) redirect("/")
+  if (!admin) redirect("/entrar")
 
   const { date: dateParam } = await searchParams
   const date = parseDateParam(dateParam)
@@ -61,7 +61,7 @@ const Schedule = async ({ searchParams }: ScheduleProps) => {
       startsAt: booking.date,
       endsAt: addMinutes(booking.date, booking.service.durationMinutes),
       title: booking.service.name,
-      subtitle: booking.customer.name ?? booking.customer.email,
+      subtitle: booking.customer.name,
       status: booking.status,
     })),
     ...blocks.map<TimelineEntry>((block) => ({

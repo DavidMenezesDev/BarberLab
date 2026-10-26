@@ -11,6 +11,9 @@ export const RATE_LIMITS = {
   createBooking: { points: 5, duration: 60 },
   readSchedule: { points: 30, duration: 60 },
   adminWrite: { points: 20, duration: 60 },
+  signup: { points: 5, duration: 3600 },
+  login: { points: 8, duration: 900 },
+  acceptInvite: { points: 10, duration: 600 },
 } as const
 
 export type RateLimitName = keyof typeof RATE_LIMITS

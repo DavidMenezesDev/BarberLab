@@ -3,18 +3,32 @@
 import { BookingStatus } from "@prisma/client"
 import { addMinutes, endOfDay, startOfDay } from "date-fns"
 import { revalidatePath } from "next/cache"
-import { auth } from "../_lib/auth"
+import {
+  customerSchema,
+  toCustomerData,
+  type CustomerInput,
+} from "../_lib/customer-schema"
+import {
+  getCurrentCustomerId,
+  rememberCustomer,
+} from "../_lib/customer-session"
 import { db } from "../_lib/prisma"
 import {
   buildDaySlots,
   findDayHours,
   withDefaults,
 } from "../_lib/opening-hours"
-import { consumeRateLimit, rateLimitError } from "../_lib/rate-limit"
+import {
+  consumeRateLimit,
+  getClientIp,
+  rateLimitError,
+} from "../_lib/rate-limit"
 
 interface CreateBookingParams {
   serviceId: string
+  barberId?: string
   date: Date
+  customer: CustomerInput
 }
 
 const MAXIMO_DE_RESERVAS_EM_ABERTO = 3
@@ -24,19 +38,27 @@ const overlaps = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
 
 export const createBooking = async ({
   serviceId,
+  barberId,
   date,
+  customer,
 }: CreateBookingParams) => {
-  const session = await auth()
-
-  if (!session?.user) {
-    return { ok: false as const, error: "Você precisa estar logado." }
-  }
-
-  const limit = await consumeRateLimit("createBooking", session.user.id)
+  const limit = await consumeRateLimit("createBooking", await getClientIp())
 
   if (!limit.allowed) {
     return rateLimitError(limit.retryAfterSeconds)
   }
+
+  const parsedCustomer = customerSchema.safeParse(customer)
+
+  if (!parsedCustomer.success) {
+    return {
+      ok: false as const,
+      error: parsedCustomer.error.issues[0]?.message ?? "Dados inválidos.",
+    }
+  }
+
+  const customerData = toCustomerData(parsedCustomer.data)
+  const currentCustomerId = await getCurrentCustomerId()
 
   const bookingDate = new Date(date)
 
@@ -46,21 +68,6 @@ export const createBooking = async ({
 
   if (bookingDate.getTime() <= Date.now()) {
     return { ok: false as const, error: "Escolha um horário no futuro." }
-  }
-
-  const emAberto = await db.booking.count({
-    where: {
-      userId: session.user.id,
-      status: BookingStatus.CONFIRMED,
-      date: { gte: new Date() },
-    },
-  })
-
-  if (emAberto >= MAXIMO_DE_RESERVAS_EM_ABERTO) {
-    return {
-      ok: false as const,
-      error: `Você já tem ${MAXIMO_DE_RESERVAS_EM_ABERTO} horários marcados. Conclua ou cancele um para marcar outro.`,
-    }
   }
 
   const service = await db.barbershopService.findUnique({
@@ -76,6 +83,47 @@ export const createBooking = async ({
   if (!service || !service.isActive) {
     return { ok: false as const, error: "Serviço indisponível." }
   }
+
+  // O limite vale por barbearia: quem marca em outra loja não é afetado.
+  const emAberto = await db.booking.count({
+    where: {
+      // O telefone entra na conta para o limite não sumir ao limpar os cookies.
+      customer: {
+        OR: [
+          { phone: customerData.phone },
+          ...(currentCustomerId ? [{ id: currentCustomerId }] : []),
+        ],
+      },
+      service: { barbershopId: service.barbershopId },
+      status: BookingStatus.CONFIRMED,
+      date: { gte: new Date() },
+    },
+  })
+
+  if (emAberto >= MAXIMO_DE_RESERVAS_EM_ABERTO) {
+    return {
+      ok: false as const,
+      error: `Você já tem ${MAXIMO_DE_RESERVAS_EM_ABERTO} horários marcados nesta barbearia. Conclua ou cancele um para marcar outro.`,
+    }
+  }
+
+  // Com barbeiros cadastrados, escolher um é obrigatório; sem nenhum, a
+  // barbearia segue funcionando como uma agenda única.
+  const activeBarbers = await db.barber.findMany({
+    where: { barbershopId: service.barbershopId, isActive: true },
+    select: { id: true },
+  })
+
+  if (activeBarbers.length > 0) {
+    if (!barberId) {
+      return { ok: false as const, error: "Escolha um barbeiro." }
+    }
+    if (!activeBarbers.some((barber) => barber.id === barberId)) {
+      return { ok: false as const, error: "Barbeiro indisponível." }
+    }
+  }
+
+  const chosenBarberId = activeBarbers.length > 0 ? barberId : undefined
 
   const openingHours = withDefaults(
     await db.openingHour.findMany({
@@ -110,6 +158,10 @@ export const createBooking = async ({
         date: { gte: from, lte: to },
         status: { not: BookingStatus.CANCELED },
         service: { barbershopId: service.barbershopId },
+        // Reservas antigas, sem barbeiro, seguem ocupando a barbearia toda.
+        ...(chosenBarberId && {
+          OR: [{ barberId: chosenBarberId }, { barberId: null }],
+        }),
       },
       select: { date: true, service: { select: { durationMinutes: true } } },
     }),
@@ -146,9 +198,31 @@ export const createBooking = async ({
     }
   }
 
+  const existingCustomer = currentCustomerId
+    ? await db.customer.findUnique({
+        where: { id: currentCustomerId },
+        select: { id: true },
+      })
+    : null
+
+  const savedCustomer = existingCustomer
+    ? await db.customer.update({
+        where: { id: existingCustomer.id },
+        data: customerData,
+        select: { id: true },
+      })
+    : await db.customer.create({ data: customerData, select: { id: true } })
+
   await db.booking.create({
-    data: { serviceId, date: bookingDate, userId: session.user.id },
+    data: {
+      serviceId,
+      barberId: chosenBarberId,
+      date: bookingDate,
+      customerId: savedCustomer.id,
+    },
   })
+
+  await rememberCustomer(savedCustomer.id)
 
   revalidatePath("/barbershops", "page")
   revalidatePath("/bookings", "page")
