@@ -31,7 +31,8 @@ export const updateBookingStatus = async (input: unknown) => {
   const result = await db.booking.updateMany({
     where: {
       id: parsed.data.bookingId,
-      service: { barbershopId: admin.barbershopId },
+      // A visão geral age em qualquer unidade em que a pessoa atua.
+      service: { barbershop: { members: { some: { userId: admin.userId } } } },
     },
     data: { status: parsed.data.status },
   })
@@ -41,6 +42,7 @@ export const updateBookingStatus = async (input: unknown) => {
   }
 
   revalidatePath("/dashboard")
+  revalidatePath("/overview")
   revalidatePath("/schedule")
   revalidatePath("/bookings")
 

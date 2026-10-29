@@ -1,4 +1,14 @@
 import { z } from "zod"
+import { imageUrlSchema } from "@/app/_lib/images"
+
+export const featuresSchema = z
+  .array(
+    z
+      .string()
+      .trim()
+      .max(60, "Cada característica tem no máximo 60 caracteres."),
+  )
+  .max(12, "No máximo 12 características.")
 
 const phone = z
   .string()
@@ -16,7 +26,8 @@ export const barbershopProfileSchema = z.object({
     .trim()
     .min(20, "Escreva ao menos uma frase sobre a barbearia.")
     .max(600),
-  imageUrl: z.url("Informe uma URL de imagem válida."),
+  imageUrl: imageUrlSchema,
+  features: featuresSchema,
   phones: z
     .array(phone)
     .min(1, "Informe ao menos um telefone.")

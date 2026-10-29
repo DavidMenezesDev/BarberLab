@@ -23,9 +23,11 @@ const Settings = async () => {
       where: { id: admin.barbershopId },
       select: {
         name: true,
+        slug: true,
         address: true,
         description: true,
         imageUrl: true,
+        features: true,
         phones: true,
       },
     }),
@@ -34,10 +36,13 @@ const Settings = async () => {
       orderBy: { weekday: "asc" },
       select: { weekday: true, opensAt: true, closesAt: true, isClosed: true },
     }),
-    db.user.findMany({
+    db.barbershopMember.findMany({
       where: { barbershopId: admin.barbershopId },
       orderBy: { createdAt: "asc" },
-      select: { id: true, name: true, email: true, staffRole: true },
+      select: {
+        staffRole: true,
+        user: { select: { id: true, name: true, email: true } },
+      },
     }),
     db.staffInvite.findMany({
       where: {
@@ -62,8 +67,13 @@ const Settings = async () => {
         />
 
         <BarbershopProfileForm
+          slug={barbershop.slug}
           profile={{
-            ...barbershop,
+            name: barbershop.name,
+            address: barbershop.address,
+            description: barbershop.description,
+            imageUrl: barbershop.imageUrl,
+            features: barbershop.features,
             phones: barbershop.phones.length > 0 ? barbershop.phones : [""],
           }}
         />
@@ -88,11 +98,11 @@ const Settings = async () => {
 
         <StaffManager
           members={staff.map((member) => ({
-            id: member.id,
-            name: member.name,
-            email: member.email,
+            id: member.user.id,
+            name: member.user.name,
+            email: member.user.email,
             isOwner: member.staffRole === StaffRole.OWNER,
-            isSelf: member.id === admin.userId,
+            isSelf: member.user.id === admin.userId,
           }))}
           invites={invites.map((invite) => ({
             ...invite,

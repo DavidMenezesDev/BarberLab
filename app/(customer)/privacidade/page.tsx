@@ -24,10 +24,10 @@ const Privacidade = () => {
           qualquer assunto relacionado a esta política, incluindo pedidos sobre
           seus dados, escreva para{" "}
           <a
-            href="mailto:lptech.contato.labs@gmail.com"
+            href="mailto:menezes@gmail.com"
             className="text-primary hover:underline"
           >
-            lptech.contato.labs@gmail.com
+            menezes@gmail.com
           </a>
           .
         </p>

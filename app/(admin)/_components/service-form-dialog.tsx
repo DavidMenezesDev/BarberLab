@@ -16,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/app/_components/ui/form"
+import ImageUploadField from "@/app/_components/image-upload-field"
 import { Input } from "@/app/_components/ui/input"
 import { Select } from "@/app/_components/ui/select"
 import { Switch } from "@/app/_components/ui/switch"
@@ -200,12 +201,12 @@ const ServiceFormDialog = ({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL da imagem</FormLabel>
+                  <FormLabel>Imagem</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="https://..."
-                      inputMode="url"
-                      {...field}
+                    <ImageUploadField
+                      value={field.value}
+                      onChange={field.onChange}
+                      previewClassName="h-32"
                     />
                   </FormControl>
                   <FormMessage />

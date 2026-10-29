@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Inter_Tight } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "./_components/ui/sonner"
 import AuthProvider from "./_providers/auth"
@@ -7,7 +7,11 @@ import ProgressProvider from "./_components/progress-bar"
 import DemoBanner from "./_components/demo-banner"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-inter-tight",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://barber-lab.vercel.app/"),
@@ -49,7 +53,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#151619",
+  themeColor: "#181824",
 }
 
 export default function RootLayout({
@@ -59,7 +63,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-br" className="dark">
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${interTight.variable} font-body`}>
         <DemoBanner />
         <AuthProvider>
           <ProgressProvider>{children}</ProgressProvider>

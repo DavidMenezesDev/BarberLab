@@ -16,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/app/_components/ui/form"
+import ImageUploadField from "@/app/_components/image-upload-field"
 import { Input } from "@/app/_components/ui/input"
 import { Switch } from "@/app/_components/ui/switch"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -127,12 +128,12 @@ const BarberFormDialog = ({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL da foto (opcional)</FormLabel>
+                  <FormLabel>Foto (opcional)</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="https://..."
-                      inputMode="url"
-                      {...field}
+                    <ImageUploadField
+                      value={field.value}
+                      onChange={field.onChange}
+                      previewClassName="h-32"
                     />
                   </FormControl>
                   <FormMessage />

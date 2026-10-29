@@ -27,14 +27,17 @@ export const createStaffInvite = async (input: unknown) => {
 
   const email = parsed.data.email.trim().toLowerCase()
 
-  const existing = await db.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
-    select: { barbershopId: true },
+  const existing = await db.barbershopMember.findFirst({
+    where: {
+      barbershopId: admin.barbershopId,
+      user: { email: { equals: email, mode: "insensitive" } },
+    },
+    select: { id: true },
   })
-  if (existing?.barbershopId) {
+  if (existing) {
     return {
       ok: false as const,
-      error: "Essa pessoa já faz parte de uma barbearia.",
+      error: "Essa pessoa já faz parte desta barbearia.",
     }
   }
 
@@ -85,17 +88,25 @@ export const removeStaffMember = async (userId: string) => {
     return { ok: false as const, error: "Você não pode remover a si mesmo." }
   }
 
-  const result = await db.user.updateMany({
+  const result = await db.barbershopMember.deleteMany({
     where: {
-      id: userId,
+      userId,
       barbershopId: admin.barbershopId,
       staffRole: { not: StaffRole.OWNER },
     },
-    data: { role: Role.CUSTOMER, staffRole: null, barbershopId: null },
   })
 
   if (result.count === 0) {
     return { ok: false as const, error: "Membro não encontrado." }
+  }
+
+  // Só perde o acesso ao painel quem não atua em mais nenhuma unidade.
+  const remaining = await db.barbershopMember.count({ where: { userId } })
+  if (remaining === 0) {
+    await db.user.update({
+      where: { id: userId },
+      data: { role: Role.CUSTOMER },
+    })
   }
 
   // Sai da lista pública; o histórico de agendamentos dele continua.

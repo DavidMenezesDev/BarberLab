@@ -5,9 +5,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { navItemsFor } from "./admin-nav"
 
-const AdminTabBar = ({ isOwner }: { isOwner: boolean }) => {
+const AdminTabBar = ({
+  isOwner,
+  multiUnit,
+}: {
+  isOwner: boolean
+  multiUnit: boolean
+}) => {
   const pathname = usePathname()
-  const items = navItemsFor(isOwner)
+  const items = navItemsFor(isOwner, multiUnit)
 
   return (
     <nav className="bg-card/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden">

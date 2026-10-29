@@ -2,15 +2,16 @@
 
 import { Barbershop, BarbershopService } from "@prisma/client"
 import Image from "next/image"
+import { ChevronLeftIcon } from "lucide-react"
 import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "./ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Calendar } from "./ui/calendar"
 import { ptBR } from "date-fns/locale"
@@ -55,6 +56,15 @@ interface GetTimeListProps {
   selectedDay: Date
   durationMinutes: number
   openingHours: OpeningHourSlot[]
+}
+
+type BookingStep = "barber" | "date" | "time" | "details"
+
+const STEP_TITLES: Record<BookingStep, string> = {
+  barber: "Escolha o barbeiro",
+  date: "Escolha o dia",
+  time: "Escolha o horário",
+  details: "Confirme sua reserva",
 }
 
 const getTimeList = ({
@@ -115,6 +125,9 @@ const ServiceItem = ({
     (barber) => barber.id === selectedBarberId,
   )
   const barberStepDone = !needsBarber || !!selectedBarber
+  const firstStep: BookingStep = needsBarber ? "barber" : "date"
+  const [step, setStep] = useState<BookingStep>(firstStep)
+  const canGoBack = step !== firstStep
 
   useEffect(() => {
     if (!selectedDay || !barberStepDone) return
@@ -162,6 +175,16 @@ const ServiceItem = ({
     setSelectedBarberId(barberId)
     setSelectedTime(undefined)
     setUnavailable([])
+    if (barberId) setStep("date")
+  }
+
+  const handleBack = () => {
+    if (step === "details") setStep("time")
+    else if (step === "time") setStep("date")
+    else if (step === "date") {
+      handleBarberSelect(undefined)
+      setStep("barber")
+    }
   }
 
   const handleBookingSheetOpenChange = () => {
@@ -171,16 +194,19 @@ const ServiceItem = ({
     setUnavailable([])
     setOpeningHours([])
     setIsLoadingSlots(false)
+    setStep(firstStep)
     setBookingSheetIsOpen(false)
   }
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDay(date)
     setSelectedTime(undefined)
+    if (date) setStep("time")
   }
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time)
+    setStep("details")
   }
 
   const handleCreateBooking = () =>
@@ -263,7 +289,7 @@ const ServiceItem = ({
                 }).format(Number(service.price))}
               </p>
               <div className="flex-1" />
-              <Sheet
+              <Dialog
                 open={bookingSheetIsOpen}
                 onOpenChange={(open) => {
                   if (!open) handleBookingSheetOpenChange()
@@ -278,20 +304,29 @@ const ServiceItem = ({
                   Reservar
                 </Button>
 
-                <SheetContent
-                  className="w-[92%] gap-0 p-0 sm:max-w-md"
+                <DialogContent
+                  className="flex max-h-[90dvh] w-[92%] flex-col gap-0 overflow-hidden rounded-lg p-0 sm:max-w-md"
                   aria-describedby={undefined}
                 >
-                  <SheetHeader className="items-center border-b border-solid px-5 py-4">
-                    <SheetTitle>Fazer Reserva</SheetTitle>
-                  </SheetHeader>
+                  <DialogHeader className="relative items-center border-b border-solid px-12 py-4 text-center sm:text-center">
+                    {canGoBack && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={handleBack}
+                        disabled={isCreating}
+                        className="absolute top-2 left-2 h-8 w-8"
+                        aria-label="Voltar"
+                      >
+                        <ChevronLeftIcon size={18} />
+                      </Button>
+                    )}
+                    <DialogTitle>{STEP_TITLES[step]}</DialogTitle>
+                  </DialogHeader>
 
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                    {needsBarber && !selectedBarber && (
+                    {step === "barber" && (
                       <div className="space-y-3 px-5 py-5">
-                        <h3 className="text-sm font-semibold">
-                          Com quem você quer cortar?
-                        </h3>
                         <div className="space-y-2">
                           {barbers.map((barber) => (
                             <button
@@ -327,36 +362,8 @@ const ServiceItem = ({
                       </div>
                     )}
 
-                    {selectedBarber && (
-                      <div className="flex items-center justify-between gap-3 border-b border-solid px-5 py-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            {selectedBarber.imageUrl && (
-                              <AvatarImage
-                                src={selectedBarber.imageUrl}
-                                alt={selectedBarber.name}
-                              />
-                            )}
-                            <AvatarFallback>
-                              {selectedBarber.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <p className="truncate text-sm font-semibold">
-                            {selectedBarber.name}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleBarberSelect(undefined)}
-                        >
-                          Trocar
-                        </Button>
-                      </div>
-                    )}
-
-                    {barberStepDone && (
-                      <div className="border-b border-solid px-5 py-5">
+                    {step === "date" && (
+                      <div className="px-5 py-5">
                         <Calendar
                           mode="single"
                           locale={ptBR}
@@ -399,8 +406,8 @@ const ServiceItem = ({
                       </div>
                     )}
 
-                    {barberStepDone && selectedDay && (
-                      <div className="border-b border-solid p-5">
+                    {step === "time" && selectedDay && (
+                      <div className="p-5">
                         {isLoadingSlots ? (
                           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                             {Array.from({ length: 12 }).map((_, i) => (
@@ -435,49 +442,48 @@ const ServiceItem = ({
                       </div>
                     )}
 
-                    {selectedDate && (
-                      <div className="p-5">
+                    {step === "details" && selectedDate && (
+                      <div className="space-y-5 p-5">
                         <BookingSummary
                           barbershop={barbershop}
                           service={service}
                           selectedDate={selectedDate}
                           barberName={selectedBarber?.name}
                         />
-                      </div>
-                    )}
-
-                    {selectedDate && (
-                      <div className="border-t border-solid p-5">
-                        <h3 className="mb-3 text-sm font-semibold">
-                          Seus dados
-                        </h3>
-                        <CustomerFields
-                          idPrefix={`reserva-${service.id}`}
-                          value={customer}
-                          onChange={setCustomer}
-                          disabled={isCreating}
-                        />
+                        <div className="border-t border-solid pt-5">
+                          <h3 className="mb-3 text-sm font-semibold">
+                            Seus dados
+                          </h3>
+                          <CustomerFields
+                            idPrefix={`reserva-${service.id}`}
+                            value={customer}
+                            onChange={setCustomer}
+                            disabled={isCreating}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  <SheetFooter className="border-t border-solid px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                    <Button
-                      className="w-full"
-                      onClick={handleCreateBooking}
-                      disabled={
-                        !selectedDay ||
-                        !selectedTime ||
-                        !customer.name.trim() ||
-                        !customer.phone.trim() ||
-                        isCreating
-                      }
-                    >
-                      {isCreating ? "Confirmando..." : "Confirmar"}
-                    </Button>
-                  </SheetFooter>
-                </SheetContent>
-              </Sheet>
+                  {step === "details" && (
+                    <DialogFooter className="border-t border-solid px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                      <Button
+                        className="w-full"
+                        onClick={handleCreateBooking}
+                        disabled={
+                          !selectedDay ||
+                          !selectedTime ||
+                          !customer.name.trim() ||
+                          !customer.phone.trim() ||
+                          isCreating
+                        }
+                      >
+                        {isCreating ? "Confirmando..." : "Confirmar"}
+                      </Button>
+                    </DialogFooter>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardContent>

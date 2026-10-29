@@ -79,8 +79,9 @@ export const createBarbershop = async (input: unknown) => {
         phone: ownerPhone,
         passwordHash,
         role: Role.BARBER_ADMIN,
-        staffRole: StaffRole.OWNER,
-        barbershopId: barbershop.id,
+        memberships: {
+          create: { barbershopId: barbershop.id, staffRole: StaffRole.OWNER },
+        },
       },
     })
   })

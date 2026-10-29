@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { barbershopProfileSchema } from "./barbershop-schema"
+import { optionalImageUrlSchema } from "@/app/_lib/images"
+import { barbershopProfileSchema, featuresSchema } from "./barbershop-schema"
 
 export const PLACEHOLDER_BARBERSHOP_IMAGE = "/placeholder-barbershop.svg"
 
@@ -35,12 +36,8 @@ export const signupSchema = barbershopProfileSchema
       ),
     city: z.string().trim().min(2, "Informe a cidade.").max(80),
     document: documento,
-    imageUrl: z
-      .string()
-      .trim()
-      .refine((value) => value === "" || z.url().safeParse(value).success, {
-        message: "Informe uma URL de imagem válida.",
-      }),
+    imageUrl: optionalImageUrlSchema,
+    features: featuresSchema.optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não conferem.",

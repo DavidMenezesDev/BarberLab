@@ -1,5 +1,7 @@
 import { Role, StaffRole } from "@prisma/client"
 import { AuthOptions, getServerSession } from "next-auth"
+import { cookies } from "next/headers"
+import { cache } from "react"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { DEMO_BARBERSHOP_ID, isDemo } from "./deployment"
 import { verifyPassword } from "./password"
@@ -56,19 +58,16 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) token.id = user.id
 
-      // Papel e barbearia vêm do banco a cada leitura: aceitar convite,
-      // cadastrar a barbearia ou remover acesso valem na hora.
+      // O papel vem do banco a cada leitura: aceitar convite, cadastrar a
+      // barbearia ou remover acesso valem na hora. A unidade ativa e o papel
+      // nela são resolvidos em requireBarbershopAdmin.
       if (token.id) {
         const fresh = await db.user.findUnique({
           where: { id: token.id },
-          select: { role: true, staffRole: true, barbershopId: true },
+          select: { role: true },
         })
 
         token.role = isDemo ? Role.BARBER_ADMIN : (fresh?.role ?? Role.CUSTOMER)
-        token.staffRole = isDemo ? StaffRole.OWNER : (fresh?.staffRole ?? null)
-        token.barbershopId = isDemo
-          ? DEMO_BARBERSHOP_ID!
-          : (fresh?.barbershopId ?? null)
       }
 
       return token
@@ -78,8 +77,6 @@ export const authOptions: AuthOptions = {
         ...session.user,
         id: token.id,
         role: token.role ?? Role.CUSTOMER,
-        staffRole: token.staffRole ?? null,
-        barbershopId: token.barbershopId ?? null,
       }
       return session
     },
@@ -97,6 +94,32 @@ export const authOptions: AuthOptions = {
 
 export const auth = () => getServerSession(authOptions)
 
+export const ACTIVE_BARBERSHOP_COOKIE = "active_barbershop"
+
+export interface AdminUnit {
+  id: string
+  name: string
+  imageUrl: string
+  staffRole: StaffRole
+}
+
+// Unidades em que o usuário atua, da mais antiga para a mais nova.
+export const getAdminUnits = cache(async (userId: string) => {
+  const memberships = await db.barbershopMember.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      staffRole: true,
+      barbershop: { select: { id: true, name: true, imageUrl: true } },
+    },
+  })
+
+  return memberships.map(({ staffRole, barbershop }): AdminUnit => ({
+    ...barbershop,
+    staffRole,
+  }))
+})
+
 export const requireBarbershopAdmin = async () => {
   const session = await auth()
 
@@ -104,16 +127,34 @@ export const requireBarbershopAdmin = async () => {
     return null
   }
 
-  if (!session.user.barbershopId) {
-    return null
-  }
-
-  return {
+  const base = {
     userId: session.user.id,
-    barbershopId: session.user.barbershopId,
-    staffRole: session.user.staffRole ?? StaffRole.BARBER,
     name: session.user.name ?? null,
     image: session.user.image ?? null,
+  }
+
+  if (isDemo) {
+    return {
+      ...base,
+      barbershopId: DEMO_BARBERSHOP_ID!,
+      staffRole: StaffRole.OWNER,
+      units: [] as AdminUnit[],
+    }
+  }
+
+  const units = await getAdminUnits(session.user.id)
+  if (units.length === 0) return null
+
+  // O cookie só escolhe entre as unidades do próprio usuário: um valor
+  // adulterado cai na primeira em vez de abrir a barbearia de outra pessoa.
+  const wanted = (await cookies()).get(ACTIVE_BARBERSHOP_COOKIE)?.value
+  const active = units.find((unit) => unit.id === wanted) ?? units[0]
+
+  return {
+    ...base,
+    barbershopId: active.id,
+    staffRole: active.staffRole,
+    units,
   }
 }
 

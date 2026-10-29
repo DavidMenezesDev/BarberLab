@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "Fale com o Barber Lab sobre suporte, contratação do sistema para sua barbearia ou dúvidas sobre agendamentos.",
 }
 
-const CONTATO_EMAIL = "lptech.contato.labs@gmail.com"
+const CONTATO_EMAIL = "menezes@gmail.com"
 const CONTATO_WHATSAPP = "5514996674489"
 
 const Contato = () => {

@@ -40,6 +40,13 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  /* Tipografia — design system (Inter Tight para títulos/UI, Inter para corpo) */
+  --font-display: var(--font-inter-tight), Arial, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+
+  /* Tracking dos títulos: -0.02em */
+  --tracking-tightest: -0.02em;
 }
 
 @layer base {
@@ -54,33 +61,34 @@
 
 @layer base {
   .dark {
-    --background: 225 9% 9%;
-    --foreground: 210 40% 98%;
+    /* Superfícies — design system "Superlist + Blaze Orange" (dark-first) */
+    --background: 240 20% 12%;        /* #181824 */
+    --foreground: 0 0% 100%;          /* #FFFFFF */
 
-    --card: 228 9% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 230 26% 13%;              /* #191C2B */
+    --card-foreground: 0 0% 100%;
 
-    --popover: 140 10% 14%;
-    --popover-foreground: 140 30% 95%;
+    --popover: 230 26% 13%;           /* #191C2B */
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 140 70% 45%;
+    --primary: 7 93% 60%;             /* #F84F39 coral */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 140 15% 20%;
-    --secondary-foreground: 140 30% 95%;
+    --secondary: 243 22% 19%;         /* #26253B */
+    --secondary-foreground: 0 0% 97%; /* #F7F7FF */
 
-    --muted: 140 15% 20%;
-    --muted-foreground: 140 20% 70%;
+    --muted: 243 22% 19%;             /* #26253B */
+    --muted-foreground: 243 9% 59%;   /* #8E8DA0 */
 
-    --accent: 140 15% 20%;
-    --accent-foreground: 140 30% 95%;
+    --accent: 243 22% 19%;            /* #26253B */
+    --accent-foreground: 0 0% 97%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 140 30% 95%;
+    --destructive: 0 84% 60%;         /* erro 500 #EF4444 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 140 15% 20%;
-    --input: 140 15% 20%;
-    --ring: 140 60% 70%;
+    --border: 236 22% 27%;            /* #363955 */
+    --input: 236 22% 27%;
+    --ring: 243 97% 77%;              /* #8F89FA lilás */
 
     --radius: 0.5rem;
   }
@@ -95,7 +103,16 @@
     @apply h-full;
   }
   body {
-    @apply h-full bg-background text-foreground;
+    @apply h-full bg-background font-body text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-tightest);
   }
 }
 .driver-popover.driver-popover {

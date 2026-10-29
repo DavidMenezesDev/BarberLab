@@ -1,12 +1,22 @@
 import {
+  BuildingIcon,
   CalendarRangeIcon,
   LayoutDashboardIcon,
+  PaletteIcon,
   ScissorsIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react"
 
 export const ADMIN_NAV_ITEMS = [
+  {
+    href: "/overview",
+    tour: "tour-overview",
+    multiUnitOnly: true,
+    label: "Visão geral",
+    shortLabel: "Geral",
+    icon: BuildingIcon,
+  },
   {
     href: "/dashboard",
     tour: "tour-dashboard",
@@ -38,6 +48,14 @@ export const ADMIN_NAV_ITEMS = [
     icon: UsersIcon,
   },
   {
+    href: "/aparencia",
+    tour: "tour-appearance",
+    ownerOnly: true,
+    label: "Personalização",
+    shortLabel: "Visual",
+    icon: PaletteIcon,
+  },
+  {
     href: "/settings",
     tour: "tour-settings",
     ownerOnly: true,
@@ -47,5 +65,9 @@ export const ADMIN_NAV_ITEMS = [
   },
 ] as const
 
-export const navItemsFor = (isOwner: boolean) =>
-  ADMIN_NAV_ITEMS.filter((item) => isOwner || !("ownerOnly" in item))
+export const navItemsFor = (isOwner: boolean, multiUnit = false) =>
+  ADMIN_NAV_ITEMS.filter(
+    (item) =>
+      (isOwner || !("ownerOnly" in item)) &&
+      (multiUnit || !("multiUnitOnly" in item)),
+  )

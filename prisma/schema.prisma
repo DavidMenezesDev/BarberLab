@@ -24,24 +24,34 @@ enum BookingStatus {
 }
 
 model User {
-  id               String      @id @default(cuid())
+  id               String             @id @default(cuid())
   name             String?
-  email            String      @unique
+  email            String             @unique
   emailVerified    DateTime?
   image            String?
   passwordHash     String?
-  barber           Barber?
+  barbers          Barber[]
   phone            String?
-  role             Role        @default(CUSTOMER)
-  staffRole        StaffRole?
+  role             Role               @default(CUSTOMER)
   onboardingDoneAt DateTime?
-  barbershopId     String?
-  barbershop       Barbershop? @relation("BarbershopStaff", fields: [barbershopId], references: [id], onDelete: SetNull)
+  memberships      BarbershopMember[]
   accounts         Account[]
   sessions         Session[]
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
 
+// Vínculo entre quem administra e cada unidade, com o papel naquela unidade.
+model BarbershopMember {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  staffRole    StaffRole
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, barbershopId])
   @@index([barbershopId])
 }
 
@@ -121,15 +131,32 @@ model Barbershop {
   document     String?
   phones       String[]
   description  String
+  features     String[]            @default(["Wi-Fi Gratuito", "Estacionamento", "Cartão de Crédito", "Produtos Premium", "Ambiente Climatizado", "Profissionais Qualificados"])
   imageUrl     String
+  logoUrl      String?
+  // Aparência da página pública (cores e fontes), validada em app/_lib/theme.ts.
+  theme        Json?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   services     BarbershopService[]
-  staff        User[]              @relation("BarbershopStaff")
+  members      BarbershopMember[]
+  groupId      String?
+  group        BarbershopGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
   blocks       ScheduleBlock[]
   openingHours OpeningHour[]
   barbers      Barber[]
   invites      StaffInvite[]
+
+  @@index([groupId])
+}
+
+// Marca com várias unidades: o link público dela leva à escolha da unidade.
+model BarbershopGroup {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  createdAt   DateTime     @default(now())
+  barbershops Barbershop[]
 }
 
 model StaffInvite {
@@ -154,13 +181,15 @@ model Barber {
   isActive     Boolean    @default(true)
   barbershopId String
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
-  userId       String?    @unique
+  userId       String?
   user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   bookings     Booking[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  @@unique([barbershopId, userId])
   @@index([barbershopId, isActive])
+  @@index([userId])
 }
 
 model BarbershopService {
@@ -215,4 +244,12 @@ model RateLimit {
   key    String  @id @db.VarChar(255)
   points Int     @default(0)
   expire BigInt?
+}
+
+model Image {
+  id          String   @id @default(cuid())
+  data        Bytes
+  contentType String
+  size        Int
+  createdAt   DateTime @default(now())
 }

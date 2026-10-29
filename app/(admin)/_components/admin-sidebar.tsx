@@ -13,6 +13,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { navItemsFor } from "./admin-nav"
+import UnitSwitcher from "./unit-switcher"
 
 interface AdminSidebarProps {
   barbershopName: string
@@ -20,6 +21,9 @@ interface AdminSidebarProps {
   userName: string | null
   userImage: string | null
   isOwner: boolean
+  units: { id: string; name: string }[]
+  activeId: string
+  canCreate: boolean
 }
 
 const AdminSidebar = ({
@@ -28,6 +32,9 @@ const AdminSidebar = ({
   userName,
   userImage,
   isOwner,
+  units,
+  activeId,
+  canCreate,
 }: AdminSidebarProps) => {
   const pathname = usePathname()
   const initials = (userName ?? "?").trim().charAt(0).toUpperCase()
@@ -66,10 +73,19 @@ const AdminSidebar = ({
             <p className="truncate text-sm font-semibold">{barbershopName}</p>
           </div>
         </div>
+        {(units.length > 1 || canCreate) && (
+          <div className="mt-3">
+            <UnitSwitcher
+              units={units}
+              activeId={activeId}
+              canCreate={canCreate}
+            />
+          </div>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItemsFor(isOwner).map((item) => {
+        {navItemsFor(isOwner, units.length > 1).map((item) => {
           const Icon = item.icon
           const active = pathname.startsWith(item.href)
           return (

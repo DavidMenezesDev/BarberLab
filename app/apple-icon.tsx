@@ -3,8 +3,8 @@ import { ImageResponse } from "next/og"
 export const size = { width: 180, height: 180 }
 export const contentType = "image/png"
 
-const VERDE = "#22C358"
-const FUNDO = "#1A1B1F"
+const CORAL = "#F84F39"
+const FUNDO = "#181824"
 
 const anel = (top: number) => ({
   position: "absolute" as const,
@@ -13,7 +13,7 @@ const anel = (top: number) => ({
   width: 40,
   height: 40,
   borderRadius: 40,
-  border: `9px solid ${VERDE}`,
+  border: `9px solid ${CORAL}`,
 })
 
 const lamina = (centroDoAnelY: number, rotacao: number) => ({
@@ -23,7 +23,7 @@ const lamina = (centroDoAnelY: number, rotacao: number) => ({
   width: 96,
   height: 10,
   borderRadius: 10,
-  background: VERDE,
+  background: CORAL,
   transform: `rotate(${rotacao}deg)`,
   transformOrigin: "left center",
 })

@@ -1,4 +1,5 @@
 import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { isDemo, isSingleTenant } from "@/app/_lib/deployment"
 import { db } from "@/app/_lib/prisma"
 import { StaffRole } from "@prisma/client"
 import type { Metadata } from "next"
@@ -45,15 +46,20 @@ const AdminLayout = async ({ children }: { children: React.ReactNode }) => {
     userImage: admin.image,
   }
   const isOwner = admin.staffRole === StaffRole.OWNER
+  const switcher = {
+    units: admin.units,
+    activeId: admin.barbershopId,
+    canCreate: isOwner && !isDemo && !isSingleTenant,
+  }
 
   return (
     <div className="min-h-full">
-      <AdminSidebar {...identity} isOwner={isOwner} />
-      <AdminTopbar {...identity} />
+      <AdminSidebar {...identity} isOwner={isOwner} {...switcher} />
+      <AdminTopbar {...identity} {...switcher} />
 
       <main className="pb-24 lg:pb-0 lg:pl-64">{children}</main>
 
-      <AdminTabBar isOwner={isOwner} />
+      <AdminTabBar isOwner={isOwner} multiUnit={admin.units.length > 1} />
 
       {isOwner && !user?.onboardingDoneAt && <OnboardingTour />}
     </div>

@@ -35,7 +35,12 @@ export const deleteBooking = async (bookingId: string) => {
   const isOwner = !!customerId && booking.customerId === customerId
   const isBarbershopAdmin =
     session?.user?.role === Role.BARBER_ADMIN &&
-    session.user.barbershopId === booking.service.barbershopId
+    (await db.barbershopMember.count({
+      where: {
+        userId: session.user.id,
+        barbershopId: booking.service.barbershopId,
+      },
+    })) > 0
 
   if (!isOwner && !isBarbershopAdmin) {
     return { ok: false as const, error: "Reserva não encontrada." }

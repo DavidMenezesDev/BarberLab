@@ -2,6 +2,7 @@
 
 import { createBarbershop } from "@/app/(admin)/_actions/signup"
 import { Button } from "@/app/_components/ui/button"
+import ImageUploadField from "@/app/_components/image-upload-field"
 import { Input } from "@/app/_components/ui/input"
 import { Textarea } from "@/app/_components/ui/textarea"
 import { PlusIcon, Trash2Icon } from "lucide-react"
@@ -253,14 +254,8 @@ const SignupForm = () => {
           )}
         </div>
 
-        <Field id="cad-imagem" label="Foto da barbearia (link)" optional>
-          <Input
-            id="cad-imagem"
-            type="url"
-            placeholder="https://..."
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
-          />
+        <Field id="cad-imagem" label="Foto da barbearia" optional>
+          <ImageUploadField value={imageUrl} onChange={setImageUrl} />
         </Field>
       </section>
 

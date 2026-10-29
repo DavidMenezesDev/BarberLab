@@ -1,10 +1,11 @@
 import { z } from "zod"
+import { imageUrlSchema } from "@/app/_lib/images"
 
 export const serviceSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(2, "Informe o nome do serviço.").max(60),
   description: z.string().trim().min(5, "Descreva o serviço.").max(240),
-  imageUrl: z.url("Informe uma URL de imagem válida."),
+  imageUrl: imageUrlSchema,
   price: z
     .number({ message: "Informe o preço." })
     .positive("O preço precisa ser maior que zero.")

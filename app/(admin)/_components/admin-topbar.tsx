@@ -17,12 +17,16 @@ import {
 import { ArrowLeftIcon, LogOutIcon, MenuIcon } from "lucide-react"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
+import UnitSwitcher from "./unit-switcher"
 
 interface AdminTopbarProps {
   barbershopName: string
   barbershopImageUrl: string
   userName: string | null
   userImage: string | null
+  units: { id: string; name: string }[]
+  activeId: string
+  canCreate: boolean
 }
 
 const AdminTopbar = ({
@@ -30,6 +34,9 @@ const AdminTopbar = ({
   barbershopImageUrl,
   userName,
   userImage,
+  units,
+  activeId,
+  canCreate,
 }: AdminTopbarProps) => {
   const initials = (userName ?? "?").trim().charAt(0).toUpperCase()
 
@@ -91,6 +98,16 @@ const AdminTopbar = ({
                   </p>
                 </div>
               </div>
+
+              {(units.length > 1 || canCreate) && (
+                <div className="border-b border-solid py-5">
+                  <UnitSwitcher
+                    units={units}
+                    activeId={activeId}
+                    canCreate={canCreate}
+                  />
+                </div>
+              )}
 
               <div className="flex flex-col gap-2 py-5">
                 <SheetClose asChild>

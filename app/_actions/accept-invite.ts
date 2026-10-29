@@ -49,7 +49,7 @@ export const acceptStaffInvite = async (token: string) => {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, barbershopId: true },
+    select: { name: true, email: true },
   })
 
   if (!user || user.email.toLowerCase() !== invite.email.toLowerCase()) {
@@ -59,26 +59,43 @@ export const acceptStaffInvite = async (token: string) => {
     }
   }
 
-  if (user.barbershopId) {
+  const alreadyMember = await db.barbershopMember.findUnique({
+    where: {
+      userId_barbershopId: {
+        userId: session.user.id,
+        barbershopId: invite.barbershopId,
+      },
+    },
+    select: { id: true },
+  })
+  if (alreadyMember) {
     return {
       ok: false as const,
-      error: "Sua conta já está vinculada a uma barbearia.",
+      error: "Sua conta já faz parte desta barbearia.",
     }
   }
 
   await db.$transaction([
     db.user.update({
       where: { id: session.user.id },
+      data: { role: Role.BARBER_ADMIN },
+    }),
+    db.barbershopMember.create({
       data: {
-        role: Role.BARBER_ADMIN,
-        staffRole: invite.role,
+        userId: session.user.id,
         barbershopId: invite.barbershopId,
+        staffRole: invite.role,
       },
     }),
     // Entra direto na lista de barbeiros que o cliente escolhe ao reservar.
     db.barber.upsert({
-      where: { userId: session.user.id },
-      update: { barbershopId: invite.barbershopId, isActive: true },
+      where: {
+        barbershopId_userId: {
+          barbershopId: invite.barbershopId,
+          userId: session.user.id,
+        },
+      },
+      update: { isActive: true },
       create: {
         name: user.name ?? user.email.split("@")[0],
         barbershopId: invite.barbershopId,
@@ -137,8 +154,12 @@ export const registerWithInvite = async (input: unknown) => {
         phone: parsed.data.phone,
         passwordHash,
         role: Role.BARBER_ADMIN,
-        staffRole: invite.role,
-        barbershopId: invite.barbershopId,
+        memberships: {
+          create: {
+            barbershopId: invite.barbershopId,
+            staffRole: invite.role,
+          },
+        },
       },
       select: { id: true },
     })

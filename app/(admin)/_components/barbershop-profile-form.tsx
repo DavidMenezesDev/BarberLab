@@ -1,5 +1,6 @@
 "use client"
 
+import ImageUploadField from "@/app/_components/image-upload-field"
 import { Button } from "@/app/_components/ui/button"
 import { Card, CardContent } from "@/app/_components/ui/card"
 import {
@@ -15,7 +16,7 @@ import { Input } from "@/app/_components/ui/input"
 import { Textarea } from "@/app/_components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react"
-import Image from "next/image"
+import { useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { saveBarbershopProfile } from "../_actions/barbershop"
@@ -26,9 +27,14 @@ import {
 
 interface BarbershopProfileFormProps {
   profile: BarbershopProfileInput
+  slug: string
 }
 
-const BarbershopProfileForm = ({ profile }: BarbershopProfileFormProps) => {
+const BarbershopProfileForm = ({
+  profile,
+  slug,
+}: BarbershopProfileFormProps) => {
+  const [currentSlug, setCurrentSlug] = useState(slug)
   const form = useForm<BarbershopProfileInput>({
     resolver: zodResolver(barbershopProfileSchema),
     defaultValues: profile,
@@ -39,13 +45,17 @@ const BarbershopProfileForm = ({ profile }: BarbershopProfileFormProps) => {
     name: "phones" as never,
   })
 
-  const imageUrl = form.watch("imageUrl")
+  const features = useFieldArray({
+    control: form.control,
+    name: "features" as never,
+  })
 
   const onSubmit = async (values: BarbershopProfileInput) => {
     const result = await saveBarbershopProfile(values)
 
     if (result.ok) {
       toast.success("Dados da barbearia salvos.")
+      setCurrentSlug(result.slug)
       form.reset(values)
     } else {
       toast.error(result.error)
@@ -70,6 +80,10 @@ const BarbershopProfileForm = ({ profile }: BarbershopProfileFormProps) => {
                   <FormControl>
                     <Input placeholder="Barbearia do Zé" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    Link público: <strong>/{currentSlug}</strong>. Ao mudar o
+                    nome, o link muda junto.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -106,7 +120,8 @@ const BarbershopProfileForm = ({ profile }: BarbershopProfileFormProps) => {
                     />
                   </FormControl>
                   <FormDescription>
-                    Este texto aparece para o cliente na página da barbearia.
+                    Este texto aparece para o cliente na seção Sobre a
+                    barbearia.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -120,29 +135,65 @@ const BarbershopProfileForm = ({ profile }: BarbershopProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Foto de capa</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://..." {...field} />
+                    <ImageUploadField
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
-                  <FormDescription>
-                    Cole o endereço de uma imagem. O envio de arquivo direto
-                    ainda não está disponível.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {imageUrl && !form.getFieldState("imageUrl").invalid && (
-              <div className="relative h-40 w-full overflow-hidden rounded-lg border">
-                <Image
-                  src={imageUrl}
-                  alt="Prévia da foto de capa"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 640px"
-                  className="object-cover"
-                  unoptimized
-                />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <FormLabel>Características</FormLabel>
+                  <p className="text-muted-foreground text-xs">
+                    Lista com ✓ na seção Sobre a barbearia. Ex.: Wi-Fi,
+                    Estacionamento.
+                  </p>
+                </div>
+                {features.fields.length < 12 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => features.append("" as never)}
+                  >
+                    <PlusIcon />
+                    Adicionar
+                  </Button>
+                )}
               </div>
-            )}
+
+              {features.fields.map((item, index) => (
+                <FormField
+                  key={item.id}
+                  control={form.control}
+                  name={`features.${index}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Input placeholder="Wi-Fi gratuito" {...field} />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Remover característica ${index + 1}`}
+                          onClick={() => features.remove(index)}
+                        >
+                          <Trash2Icon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">

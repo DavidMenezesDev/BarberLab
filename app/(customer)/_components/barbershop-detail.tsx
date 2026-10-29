@@ -1,11 +1,11 @@
 import { WEEKDAY_LABELS, type OpeningHourSlot } from "@/app/_lib/opening-hours"
+import BarbershopThemeStyle from "@/app/_components/barbershop-theme-style"
 import PhoneItem from "@/app/_components/phone-item"
 import ServiceItem, { type BarberOption } from "@/app/_components/service-item"
 import SidebarSheet from "@/app/_components/sidebar-sheet"
 import { Button } from "@/app/_components/ui/button"
 import { Sheet, SheetTrigger } from "@/app/_components/ui/sheet"
 import {
-  AwardIcon,
   CalendarIcon,
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -15,17 +15,10 @@ import {
   MenuIcon,
   PhoneIcon,
   StarIcon,
-  UsersIcon,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/app/_components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/app/_components/ui/card"
 import type { Barbershop, BarbershopService } from "@prisma/client"
 
 interface BarbershopDetailProps {
@@ -37,304 +30,212 @@ interface BarbershopDetailProps {
   showHeroNav?: boolean
   singleTenant?: boolean
   sidebarSlot?: React.ReactNode
+  otherUnitsHref?: string
 }
 
+const SectionTitle = ({
+  icon: Icon,
+  children,
+}: {
+  icon: typeof InfoIcon
+  children: React.ReactNode
+}) => (
+  <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold lg:text-xl">
+    <Icon className="text-primary h-5 w-5" aria-hidden="true" />
+    {children}
+  </h2>
+)
+
+// Organização inspirada em páginas de vaga: barra com a marca, banner, bloco
+// de título com a chamada principal e seções empilhadas em coluna única.
 const BarbershopDetail = ({
   barbershop,
   openingHours,
   showHeroNav = true,
   singleTenant = false,
   sidebarSlot,
+  otherUnitsHref,
 }: BarbershopDetailProps) => {
   return (
-    <div className="from-background via-background to-muted/20 min-h-svh bg-linear-to-br">
-      {/* Imagem principal (Hero) */}
-      <div className="relative h-75 w-full lg:h-125">
+    <div className="bg-background min-h-svh">
+      <BarbershopThemeStyle theme={barbershop.theme} />
+
+      {/* Barra superior com a marca */}
+      <header className="bg-card/80 sticky top-0 z-30 border-b backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-4xl items-center gap-3 px-5 lg:h-16 lg:px-8">
+          {showHeroNav && (
+            <Button size="icon" variant="ghost" asChild>
+              <Link href="/" aria-label="Voltar">
+                <ChevronLeftIcon className="h-5 w-5" />
+              </Link>
+            </Button>
+          )}
+
+          {barbershop.logoUrl && (
+            <Image
+              alt={`Logo ${barbershop.name}`}
+              src={barbershop.logoUrl}
+              width={36}
+              height={36}
+              unoptimized
+              className="h-9 w-9 rounded-lg object-contain"
+            />
+          )}
+          <span className="min-w-0 flex-1 truncate font-semibold">
+            {barbershop.name}
+          </span>
+
+          <nav className="text-muted-foreground hidden items-center gap-6 text-sm lg:flex">
+            <a href="#sobre" className="hover:text-foreground">
+              Sobre
+            </a>
+            <a href="#servicos" className="hover:text-foreground">
+              Serviços
+            </a>
+            <a href="#horarios" className="hover:text-foreground">
+              Horários
+            </a>
+            <a href="#contato" className="hover:text-foreground">
+              Contato
+            </a>
+          </nav>
+
+          {showHeroNav && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="ghost" aria-label="Menu">
+                  <MenuIcon className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SidebarSheet singleTenant={singleTenant} />
+            </Sheet>
+          )}
+        </div>
+      </header>
+
+      {/* Banner */}
+      <div className="relative h-40 w-full lg:h-72">
         <Image
           alt={barbershop.name}
-          src={barbershop?.imageUrl}
+          src={barbershop.imageUrl}
           fill
           sizes="100vw"
           quality={75}
           className="object-cover"
           priority={true}
         />
-
-        {/* Sobreposição de gradiente */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/20" />
-
-        {/* Navegação sobre a foto */}
-        {showHeroNav && (
-          <>
-            <div className="absolute top-4 left-4 lg:top-8 lg:left-8">
-              <Button size="icon" variant="secondary" asChild>
-                <Link href="/">
-                  <ChevronLeftIcon className="h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-
-            <div className="absolute top-4 right-4 flex gap-2 lg:top-8 lg:right-8">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button size="icon" variant="secondary">
-                    <MenuIcon className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SidebarSheet singleTenant={singleTenant} />
-              </Sheet>
-            </div>
-          </>
-        )}
-
-        {/* Conteúdo sobreposto na imagem principal */}
-        <div className="absolute right-0 bottom-0 left-0 p-5 lg:p-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="text-white">
-              <div className="mb-2 flex items-center gap-2">
-                <Badge className="bg-primary/90 backdrop-blur-sm">
-                  <StarIcon size={12} className="mr-1 fill-white text-white" />
-                  {/* {barbershop.rating} */}
-                  {4.9}
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="border-white/30 bg-white/20 text-white backdrop-blur-sm"
-                >
-                  {/* {barbershop.reviewCount} avaliações */}
-                  {70} avaliações
-                </Badge>
-              </div>
-              <h1 className="mb-2 text-2xl font-bold lg:mb-4 lg:text-4xl">
-                {barbershop.name}
-              </h1>
-              <div className="flex items-center gap-2 text-white/90">
-                <MapPinIcon size={16} className="lg:h-5 lg:w-5" />
-                <p className="text-sm lg:text-base">{barbershop?.address}</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Conteúdo principal */}
-      <div className="mx-auto max-w-7xl">
-        <div className="p-5 lg:px-8 lg:py-12">
-          {/* Layout Desktop */}
-          <div className="lg:grid lg:grid-cols-12 lg:gap-12">
-            {/* Coluna Esquerda - Conteúdo Principal */}
-            <div className="space-y-8 lg:col-span-8">
-              {/* Estatísticas rápidas - Mobile */}
-              <div className="grid grid-cols-3 gap-3 lg:hidden">
-                <Card className="bg-card/50 border-0 backdrop-blur-sm">
-                  <CardContent className="p-4 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <StarIcon className="h-5 w-5 text-yellow-500" />
-                      <p className="text-lg font-bold">
-                        {/* barbershop.rating */} 4.9
-                      </p>
-                      <p className="text-muted-foreground text-xs">Avaliação</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-card/50 border-0 backdrop-blur-sm">
-                  <CardContent className="p-4 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <UsersIcon className="h-5 w-5 text-blue-500" />
-                      <p className="text-lg font-bold">
-                        {/* barbershop.reviewCount */} 70
-                      </p>
-                      <p className="text-muted-foreground text-xs">Clientes</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-card/50 border-0 backdrop-blur-sm">
-                  <CardContent className="p-4 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <AwardIcon className="h-5 w-5 text-green-500" />
-                      <p className="text-lg font-bold">5+</p>
-                      <p className="text-muted-foreground text-xs">Anos</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+      <main className="mx-auto max-w-4xl px-5 lg:px-8">
+        {/* Título e chamada principal */}
+        <section className="space-y-4 py-6 lg:py-10">
+          <h1 className="text-2xl font-bold lg:text-4xl">{barbershop.name}</h1>
 
-              {/* Seção Sobre */}
-              <Card className="bg-card/30 border-0 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <InfoIcon className="text-primary h-5 w-5" />
-                    Sobre a Barbearia
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground leading-relaxed lg:text-lg">
-                    {barbershop?.description}
-                  </p>
+          <div className="text-muted-foreground flex items-center gap-2">
+            <MapPinIcon size={16} className="shrink-0" />
+            <p className="text-sm lg:text-base">{barbershop.address}</p>
+          </div>
 
-                  {/* Características */}
-                  <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                      <span>Wi-Fi Gratuito</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                      <span>Estacionamento</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                      <span>Cartão de Crédito</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                      <span>Produtos Premium</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                      <span>Ambiente Climatizado</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                      <span>Profissionais Qualificados</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="bg-primary/90">
+              <StarIcon size={12} className="mr-1 fill-current" />
+              {4.9}
+            </Badge>
+            <Badge variant="secondary">{70} avaliações</Badge>
+            <Badge variant="secondary">
+              {barbershop.services.length} serviços
+            </Badge>
+          </div>
 
-              {/* Seção de Serviços */}
-              <Card
-                id="servicos"
-                className="bg-card/30 scroll-mt-24 border-0 backdrop-blur-sm"
+          <div className="flex flex-wrap items-center gap-4 pt-2">
+            <Button size="lg" asChild>
+              <a href="#servicos">
+                <CalendarIcon aria-hidden="true" />
+                Agendar horário
+              </a>
+            </Button>
+            {otherUnitsHref && (
+              <Link
+                href={otherUnitsHref}
+                className="text-muted-foreground text-sm underline underline-offset-4"
               >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <CalendarIcon className="text-primary h-5 w-5" />
-                      Nossos Serviços
-                    </CardTitle>
-                    <Badge variant="secondary" className="px-3 py-1">
-                      {barbershop.services.length} serviços
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 lg:gap-6">
-                    {barbershop.services.map((service) => (
-                      <ServiceItem
-                        key={service.id}
-                        barbershop={JSON.parse(JSON.stringify(barbershop))}
-                        service={JSON.parse(JSON.stringify(service))}
-                        barbers={barbershop.barbers}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Coluna Direita - Sidebar */}
-            <div className="mt-8 space-y-6 lg:col-span-4 lg:mt-0">
-              {sidebarSlot}
-
-              {/* Estatísticas rápidas - Desktop */}
-              <div className="hidden lg:grid lg:grid-cols-2 lg:gap-4">
-                <Card className="border-yellow-500/20 bg-linear-to-br from-yellow-500/10 to-yellow-500/5 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="rounded-xl bg-yellow-500/20 p-3">
-                        <StarIcon className="h-6 w-6 text-yellow-500" />
-                      </div>
-                      <p className="text-2xl font-bold text-yellow-500">
-                        {/* barbershop.rating */} 4.9
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        Avaliação Média
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-blue-500/20 bg-linear-to-br from-blue-500/10 to-blue-500/5 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="rounded-xl bg-blue-500/20 p-3">
-                        <UsersIcon className="h-6 w-6 text-blue-500" />
-                      </div>
-                      <p className="text-2xl font-bold text-blue-500">
-                        {/* barbershop.reviewCount */} +70
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        Clientes Atendidos
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Horário de Funcionamento */}
-              <Card className="bg-card/30 border-0 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ClockIcon className="text-primary h-5 w-5" />
-                    Horário de Funcionamento
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {openingHours.map((hour) => (
-                      <div
-                        key={hour.weekday}
-                        className="border-border/50 flex items-center justify-between border-b py-2 last:border-0"
-                      >
-                        <span className="text-sm font-medium">
-                          {WEEKDAY_LABELS[hour.weekday]}
-                        </span>
-                        <span
-                          className={`text-sm ${hour.isClosed ? "text-red-500" : "text-muted-foreground"}`}
-                        >
-                          {hour.isClosed
-                            ? "Fechado"
-                            : `${hour.opensAt} - ${hour.closesAt}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Informações de Contato */}
-              <Card className="bg-card/30 border-0 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PhoneIcon className="text-primary h-5 w-5" />
-                    Contato
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {barbershop.phones.map((phone) => (
-                      <PhoneItem key={phone} phone={phone} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Botão de CTA */}
-              <Card className="from-primary/10 to-primary/5 border-primary/20 bg-linear-to-br backdrop-blur-sm">
-                <CardContent className="p-6 text-center">
-                  <h3 className="mb-2 flex items-center justify-center gap-2 text-lg font-semibold">
-                    <CalendarIcon aria-hidden="true" />
-                    Pronto para agendar?
-                  </h3>
-                  <p className="text-muted-foreground mb-4 text-sm">
-                    Escolha um dos nossos serviços e agende seu horário
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+                Trocar de unidade
+              </Link>
+            )}
           </div>
+        </section>
+
+        {/* Seções empilhadas */}
+        <div className="[&>*]:border-border divide-y *:py-8 lg:*:py-10">
+          <section id="sobre" className="scroll-mt-20 border-t">
+            <SectionTitle icon={InfoIcon}>Sobre a barbearia</SectionTitle>
+            <p className="text-muted-foreground leading-relaxed lg:text-lg">
+              {barbershop.description}
+            </p>
+
+            {barbershop.features.length > 0 && (
+              <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {barbershop.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm">
+                    <CheckCircleIcon className="text-primary h-4 w-4 shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {sidebarSlot && <section>{sidebarSlot}</section>}
+
+          <section id="servicos" className="scroll-mt-20">
+            <SectionTitle icon={CalendarIcon}>Nossos serviços</SectionTitle>
+            <div className="grid gap-4">
+              {barbershop.services.map((service) => (
+                <ServiceItem
+                  key={service.id}
+                  barbershop={JSON.parse(JSON.stringify(barbershop))}
+                  service={JSON.parse(JSON.stringify(service))}
+                  barbers={barbershop.barbers}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section id="horarios" className="scroll-mt-20">
+            <SectionTitle icon={ClockIcon}>
+              Horário de funcionamento
+            </SectionTitle>
+            <div className="max-w-md">
+              {openingHours.map((hour) => (
+                <div
+                  key={hour.weekday}
+                  className="border-border/50 flex items-center justify-between border-b py-2 last:border-0"
+                >
+                  <span className="text-sm font-medium">
+                    {WEEKDAY_LABELS[hour.weekday]}
+                  </span>
+                  <span
+                    className={`text-sm ${hour.isClosed ? "text-destructive" : "text-muted-foreground"}`}
+                  >
+                    {hour.isClosed
+                      ? "Fechado"
+                      : `${hour.opensAt} - ${hour.closesAt}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="contato" className="scroll-mt-20">
+            <SectionTitle icon={PhoneIcon}>Contato</SectionTitle>
+            <div className="space-y-4">
+              {barbershop.phones.map((phone) => (
+                <PhoneItem key={phone} phone={phone} />
+              ))}
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

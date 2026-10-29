@@ -1,6 +1,7 @@
 import Header from "@/app/_components/header"
 import { Card, CardContent } from "@/app/_components/ui/card"
 import { auth } from "@/app/_lib/auth"
+import { Role } from "@prisma/client"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 const Cadastro = async () => {
   const session = await auth()
 
-  if (session?.user?.barbershopId) redirect("/dashboard")
+  if (session?.user?.role === Role.BARBER_ADMIN) redirect("/dashboard")
 
   return (
     <div className="from-background via-background to-muted/20 min-h-svh bg-linear-to-br">
