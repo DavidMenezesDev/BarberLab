@@ -11,6 +11,7 @@ export const getBarbershopsById = async (barbershopId: string) => {
     // A URL pública usa o slug; o id continua valendo para links antigos.
     where: {
       OR: [{ id: barbershopId }, { slug: barbershopId }],
+      suspendedAt: null,
     },
     include: {
       services: true,

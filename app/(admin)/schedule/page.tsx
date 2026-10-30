@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { getEntitlements } from "@/app/_lib/entitlements"
 import { Card, CardContent } from "@/app/_components/ui/card"
 import { addMinutes, format } from "date-fns"
 import { BookingStatus } from "@prisma/client"
@@ -49,6 +50,7 @@ export const metadata: Metadata = {
 const Schedule = async ({ searchParams }: ScheduleProps) => {
   const admin = await requireBarbershopAdmin()
   if (!admin) redirect("/entrar")
+  const entitlements = await getEntitlements(admin.barbershopId)
 
   const { date: dateParam } = await searchParams
   const date = parseDateParam(dateParam)
@@ -92,7 +94,9 @@ const Schedule = async ({ searchParams }: ScheduleProps) => {
             </CardContent>
           </Card>
 
-          <BlockManager date={date} blocks={blocks} />
+          {entitlements?.features.scheduleBlocks && (
+            <BlockManager date={date} blocks={blocks} />
+          )}
         </div>
 
         {/* Linha do tempo do dia */}

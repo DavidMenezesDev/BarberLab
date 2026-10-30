@@ -55,9 +55,13 @@ export const createBarbershop = async (input: unknown) => {
     }
   }
 
-  const [slug, passwordHash] = await Promise.all([
+  const [slug, passwordHash, defaultPlan] = await Promise.all([
     uniqueBarbershopSlug(rest.name),
     hashPassword(password),
+    db.plan.findFirst({
+      where: { isDefault: true, isActive: true },
+      select: { id: true },
+    }),
   ])
 
   await db.$transaction(async (tx) => {
@@ -65,6 +69,7 @@ export const createBarbershop = async (input: unknown) => {
       data: {
         ...rest,
         slug,
+        planId: defaultPlan?.id ?? null,
         document: document.replace(/\D/g, "") || null,
         imageUrl: imageUrl || PLACEHOLDER_BARBERSHOP_IMAGE,
         phones: phones.map((phone) => phone.trim()).filter(Boolean),

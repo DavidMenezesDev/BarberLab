@@ -3,6 +3,7 @@
 
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
+import { ensureSuperAdmin } from "./super-admin"
 
 const slugify = (text: string) =>
   text
@@ -207,8 +208,24 @@ async function seedDatabase() {
   }
 }
 
+async function seedSuperAdmin() {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  })
+  try {
+    const result = await ensureSuperAdmin(prisma)
+    console.log(
+      `[super-admin] ${result.email}: ${result.status}`,
+      result.reason ?? "",
+    )
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
 async function main() {
   try {
+    await seedSuperAdmin()
     await seedDatabase()
   } catch (error) {
     console.error("Erro no seed:", error)

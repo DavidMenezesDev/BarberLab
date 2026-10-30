@@ -1,6 +1,7 @@
 "use server"
 
 import { requireBarbershopOwner } from "@/app/_lib/auth"
+import { getEntitlements } from "@/app/_lib/entitlements"
 import { db } from "@/app/_lib/prisma"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
 import { revalidatePath } from "next/cache"
@@ -46,6 +47,23 @@ export const upsertBarber = async (input: unknown) => {
       return { ok: false as const, error: "Barbeiro não encontrado." }
     }
   } else {
+    const entitlements = await getEntitlements(admin.barbershopId)
+    if (entitlements?.suspended) {
+      return { ok: false as const, error: "Barbearia indisponível." }
+    }
+    const maxBarbers = entitlements?.maxBarbers
+    if (maxBarbers != null) {
+      const total = await db.barber.count({
+        where: { barbershopId: admin.barbershopId },
+      })
+      if (total >= maxBarbers) {
+        return {
+          ok: false as const,
+          error: `Seu plano permite ${maxBarbers} barbeiros.`,
+        }
+      }
+    }
+
     await db.barber.create({
       data: { ...data, barbershopId: admin.barbershopId },
     })

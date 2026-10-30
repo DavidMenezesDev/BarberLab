@@ -1,6 +1,7 @@
 "use server"
 
 import { requireBarbershopOwner } from "@/app/_lib/auth"
+import { featureError } from "@/app/_lib/entitlements"
 import { db } from "@/app/_lib/prisma"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
 import { Role, StaffRole } from "@prisma/client"
@@ -16,6 +17,9 @@ export const createStaffInvite = async (input: unknown) => {
 
   const limit = await consumeRateLimit("adminWrite", admin.barbershopId)
   if (!limit.allowed) return rateLimitError(limit.retryAfterSeconds)
+
+  const denied = await featureError(admin.barbershopId, "staffInvites")
+  if (denied) return denied
 
   const parsed = inviteSchema.safeParse(input)
   if (!parsed.success) {

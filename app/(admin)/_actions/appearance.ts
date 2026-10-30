@@ -1,6 +1,7 @@
 "use server"
 
 import { requireBarbershopOwner } from "@/app/_lib/auth"
+import { featureError } from "@/app/_lib/entitlements"
 import { db } from "@/app/_lib/prisma"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
 import { Prisma } from "@prisma/client"
@@ -17,6 +18,9 @@ export const saveBarbershopAppearance = async (input: unknown) => {
   if (!limit.allowed) {
     return rateLimitError(limit.retryAfterSeconds)
   }
+
+  const denied = await featureError(admin.barbershopId, "appearance")
+  if (denied) return denied
 
   const parsed = appearanceSchema.safeParse(input)
   if (!parsed.success) {

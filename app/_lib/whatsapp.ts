@@ -107,6 +107,46 @@ export const buildBarberReminderMessage = ({
     .join("\n")
 }
 
+export interface BookingCreatedInfo {
+  customerName: string
+  barbershopName: string
+  barbershopAddress?: string | null
+  serviceName: string
+  barberName?: string | null
+  date: Date
+  durationMinutes: number
+  price: number
+}
+
+// Mensagem enviada ao cliente, pela barbearia, assim que o horário é marcado.
+export const buildBookingCreatedMessage = ({
+  customerName,
+  barbershopName,
+  barbershopAddress,
+  serviceName,
+  barberName,
+  date,
+  durationMinutes,
+  price,
+}: BookingCreatedInfo) => {
+  const { day, weekday, time } = formatWhen(date)
+
+  return [
+    `Olá, ${customerName.split(" ")[0]}! Seu horário na *${barbershopName}* está confirmado. ✅`,
+    "",
+    `*Serviço:* ${serviceName} (${durationMinutes} min)`,
+    barberName ? `*Barbeiro:* ${barberName}` : null,
+    `*Data:* ${day} (${weekday})`,
+    `*Horário:* ${time}`,
+    `*Valor:* ${formatPrice(price)}`,
+    barbershopAddress ? `*Endereço:* ${barbershopAddress}` : null,
+    "",
+    "Se precisar remarcar ou cancelar, fale com a barbearia. Até lá!",
+  ]
+    .filter((line) => line !== null)
+    .join("\n")
+}
+
 export const buildWhatsAppUrl = ({
   phone,
   message,

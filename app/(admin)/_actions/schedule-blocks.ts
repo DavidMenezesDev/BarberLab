@@ -1,6 +1,7 @@
 "use server"
 
 import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { featureError } from "@/app/_lib/entitlements"
 import { db } from "@/app/_lib/prisma"
 import { BookingStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
@@ -37,6 +38,9 @@ export const createScheduleBlock = async (input: unknown) => {
   if (!limit.allowed) {
     return rateLimitError(limit.retryAfterSeconds)
   }
+
+  const denied = await featureError(admin.barbershopId, "scheduleBlocks")
+  if (denied) return denied
 
   const parsed = createSchema.safeParse(input)
   if (!parsed.success) {

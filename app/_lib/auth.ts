@@ -40,7 +40,13 @@ export const authOptions: AuthOptions = {
 
         const user = await db.user.findUnique({
           where: { email },
-          select: { id: true, name: true, email: true, passwordHash: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            passwordHash: true,
+            disabledAt: true,
+          },
         })
 
         // Compara mesmo sem usuário, para não revelar se o e-mail existe.
@@ -49,6 +55,7 @@ export const authOptions: AuthOptions = {
           user?.passwordHash ?? null,
         )
         if (!user || !senhaConfere) return null
+        if (user.disabledAt) return null
 
         return { id: user.id, name: user.name, email: user.email }
       },
@@ -64,10 +71,14 @@ export const authOptions: AuthOptions = {
       if (token.id) {
         const fresh = await db.user.findUnique({
           where: { id: token.id },
-          select: { role: true },
+          select: { role: true, disabledAt: true },
         })
 
-        token.role = isDemo ? Role.BARBER_ADMIN : (fresh?.role ?? Role.CUSTOMER)
+        token.disabled = fresh?.disabledAt != null
+        token.role =
+          isDemo && fresh?.role !== Role.SUPER_ADMIN
+            ? Role.BARBER_ADMIN
+            : (fresh?.role ?? Role.CUSTOMER)
       }
 
       return token
@@ -77,6 +88,7 @@ export const authOptions: AuthOptions = {
         ...session.user,
         id: token.id,
         role: token.role ?? Role.CUSTOMER,
+        disabled: token.disabled ?? false,
       }
       return session
     },
@@ -92,7 +104,27 @@ export const authOptions: AuthOptions = {
   debug: false,
 }
 
-export const auth = () => getServerSession(authOptions)
+// Conta bloqueada pela plataforma é tratada como deslogada em todo lugar.
+export const auth = async () => {
+  const session = await getServerSession(authOptions)
+  return session?.user?.disabled ? null : session
+}
+
+// Painel da plataforma. Lê o papel do banco (não do token) para que perder o
+// acesso valha na hora e o modo demonstração nunca o conceda.
+export const requireSuperAdmin = async () => {
+  const session = await auth()
+  if (!session?.user) return null
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, image: true, role: true, disabledAt: true },
+  })
+
+  if (!user || user.role !== Role.SUPER_ADMIN || user.disabledAt) return null
+
+  return { userId: user.id, name: user.name, image: user.image }
+}
 
 export const ACTIVE_BARBERSHOP_COOKIE = "active_barbershop"
 

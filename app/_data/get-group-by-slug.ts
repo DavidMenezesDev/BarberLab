@@ -10,6 +10,7 @@ export const getGroupBySlug = async (slug: string) => {
     select: {
       name: true,
       barbershops: {
+        where: { suspendedAt: null },
         orderBy: { createdAt: "asc" },
         select: {
           id: true,

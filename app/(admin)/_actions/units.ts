@@ -7,6 +7,7 @@ import {
   requireBarbershopOwner,
 } from "@/app/_lib/auth"
 import { isDemo, isSingleTenant } from "@/app/_lib/deployment"
+import { featureError, getEntitlements } from "@/app/_lib/entitlements"
 import { db } from "@/app/_lib/prisma"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
 import { uniqueBarbershopSlug } from "@/app/_lib/slug"
@@ -82,6 +83,9 @@ export const createUnit = async (input: unknown) => {
   const limit = await consumeRateLimit("adminWrite", admin.userId)
   if (!limit.allowed) return rateLimitError(limit.retryAfterSeconds)
 
+  const denied = await featureError(admin.barbershopId, "multiUnit")
+  if (denied) return denied
+
   const parsed = newUnitSchema.safeParse(input)
   if (!parsed.success) {
     return {
@@ -95,6 +99,14 @@ export const createUnit = async (input: unknown) => {
     return {
       ok: false as const,
       error: `O limite é de ${MAX_UNITS_PER_USER} unidades por conta.`,
+    }
+  }
+
+  const planLimit = (await getEntitlements(admin.barbershopId))?.maxUnits
+  if (planLimit != null && units.length >= planLimit) {
+    return {
+      ok: false as const,
+      error: `Seu plano permite ${planLimit} ${planLimit === 1 ? "unidade" : "unidades"}.`,
     }
   }
 

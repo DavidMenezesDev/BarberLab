@@ -3,6 +3,7 @@
 import { BookingStatus } from "@prisma/client"
 import { addMinutes, endOfDay, startOfDay } from "date-fns"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
 import {
   customerSchema,
   toCustomerData,
@@ -13,6 +14,7 @@ import {
   rememberCustomer,
 } from "../_lib/customer-session"
 import { db } from "../_lib/prisma"
+import { notifyBookingCreated } from "../_lib/whatsapp/notify"
 import {
   buildDaySlots,
   findDayHours,
@@ -77,10 +79,11 @@ export const createBooking = async ({
       isActive: true,
       durationMinutes: true,
       barbershopId: true,
+      barbershop: { select: { suspendedAt: true } },
     },
   })
 
-  if (!service || !service.isActive) {
+  if (!service || !service.isActive || service.barbershop.suspendedAt) {
     return { ok: false as const, error: "Serviço indisponível." }
   }
 
@@ -213,7 +216,8 @@ export const createBooking = async ({
       })
     : await db.customer.create({ data: customerData, select: { id: true } })
 
-  await db.booking.create({
+  const booking = await db.booking.create({
+    select: { id: true },
     data: {
       serviceId,
       barberId: chosenBarberId,
@@ -223,6 +227,9 @@ export const createBooking = async ({
   })
 
   await rememberCustomer(savedCustomer.id)
+
+  // Depois da resposta, para o cliente não esperar o provedor do WhatsApp.
+  after(() => notifyBookingCreated(booking.id))
 
   revalidatePath("/barbershops", "page")
   revalidatePath("/bookings", "page")

@@ -9,7 +9,8 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "prepare": "husky && prisma generate",
-    "analyze": "ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build",
+    "db:seed-admin": "tsx --env-file=.env.local scripts/seed-super-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

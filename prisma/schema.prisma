@@ -9,6 +9,7 @@ datasource db {
 enum Role {
   CUSTOMER
   BARBER_ADMIN
+  SUPER_ADMIN
 }
 
 enum StaffRole {
@@ -23,6 +24,17 @@ enum BookingStatus {
   NO_SHOW
 }
 
+enum WhatsAppMessageStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum WhatsAppProvider {
+  WAHA
+  UAZAPI
+}
+
 model User {
   id               String             @id @default(cuid())
   name             String?
@@ -34,6 +46,8 @@ model User {
   phone            String?
   role             Role               @default(CUSTOMER)
   onboardingDoneAt DateTime?
+  // Conta bloqueada pela plataforma: não entra e a sessão aberta deixa de valer.
+  disabledAt       DateTime?
   memberships      BarbershopMember[]
   accounts         Account[]
   sessions         Session[]
@@ -123,31 +137,61 @@ model OpeningHour {
 }
 
 model Barbershop {
-  id           String              @id @default(uuid())
-  name         String
-  slug         String              @unique
-  address      String
-  city         String?
-  document     String?
-  phones       String[]
-  description  String
-  features     String[]            @default(["Wi-Fi Gratuito", "Estacionamento", "Cartão de Crédito", "Produtos Premium", "Ambiente Climatizado", "Profissionais Qualificados"])
-  imageUrl     String
-  logoUrl      String?
+  id               String              @id @default(uuid())
+  name             String
+  slug             String              @unique
+  address          String
+  city             String?
+  document         String?
+  phones           String[]
+  description      String
+  features         String[]            @default(["Wi-Fi Gratuito", "Estacionamento", "Cartão de Crédito", "Produtos Premium", "Ambiente Climatizado", "Profissionais Qualificados"])
+  imageUrl         String
+  logoUrl          String?
   // Aparência da página pública (cores e fontes), validada em app/_lib/theme.ts.
-  theme        Json?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  services     BarbershopService[]
-  members      BarbershopMember[]
-  groupId      String?
-  group        BarbershopGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  blocks       ScheduleBlock[]
-  openingHours OpeningHour[]
-  barbers      Barber[]
-  invites      StaffInvite[]
+  theme            Json?
+  // Sem plano a barbearia não tem restrição (instalações antigas e single-tenant).
+  planId           String?
+  plan             Plan?               @relation(fields: [planId], references: [id], onDelete: SetNull)
+  // Suspensa pela plataforma: sai do catálogo e não recebe agendamentos.
+  suspendedAt      DateTime?
+  // Exceções ao plano, por funcionalidade: { "appearance": false }.
+  featureOverrides Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  services         BarbershopService[]
+  members          BarbershopMember[]
+  groupId          String?
+  group            BarbershopGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  blocks           ScheduleBlock[]
+  openingHours     OpeningHour[]
+  barbers          Barber[]
+  invites          StaffInvite[]
+  whatsapp         WhatsAppConnection?
 
   @@index([groupId])
+  @@index([planId])
+}
+
+// Plano comercial: preço, limites e as funcionalidades liberadas (chaves de
+// app/_lib/features.ts). Limite nulo significa ilimitado.
+model Plan {
+  id           String       @id @default(uuid())
+  name         String
+  slug         String       @unique
+  description  String       @default("")
+  priceMonthly Decimal      @default(0) @db.Decimal(10, 2)
+  priceYearly  Decimal?     @db.Decimal(10, 2)
+  maxUnits     Int?
+  maxBarbers   Int?
+  features     String[]
+  isActive     Boolean      @default(true)
+  // Plano que as barbearias novas recebem no cadastro.
+  isDefault    Boolean      @default(false)
+  sortOrder    Int          @default(0)
+  barbershops  Barbershop[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 // Marca com várias unidades: o link público dela leva à escolha da unidade.
@@ -238,6 +282,52 @@ model ScheduleBlock {
   updatedAt    DateTime   @updatedAt
 
   @@index([barbershopId, startsAt])
+}
+
+// Número de WhatsApp ligado a um provedor (WAHA ou UAZAPI), gerido pela
+// plataforma. Com barbershopId é o número externo daquela barbearia; sem ele é
+// o número do sistema, usado por quem não tem um próprio (só um é o padrão).
+model WhatsAppConnection {
+  id            String               @id @default(uuid())
+  name          String
+  provider      WhatsAppProvider
+  baseUrl       String
+  // Chave da API (WAHA) ou admintoken (UAZAPI), cifrada em app/_lib/secret.ts.
+  apiKey        String
+  // Sessão (WAHA) ou instância (UAZAPI) criada no provedor.
+  sessionName   String
+  // Token da instância; só o UAZAPI usa. Cifrado.
+  instanceToken String?
+  // Número conectado, só dígitos, preenchido quando a conexão se confirma.
+  phone         String?
+  enabled       Boolean              @default(true)
+  isDefault     Boolean              @default(false)
+  barbershopId  String?              @unique
+  barbershop    Barbershop?          @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  logs          WhatsAppMessageLog[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+// Histórico de envios, visível só ao super admin. Guarda nomes e telefone como
+// estavam na hora, então sobrevive à exclusão da conexão ou do agendamento.
+model WhatsAppMessageLog {
+  id             String                @id @default(uuid())
+  kind           String
+  status         WhatsAppMessageStatus
+  // Motivo da falha ou do não envio.
+  error          String?
+  phone          String?
+  body           String?
+  bookingId      String?
+  barbershopName String?
+  connectionId   String?
+  connection     WhatsAppConnection?   @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  connectionName String?
+  createdAt      DateTime              @default(now())
+
+  @@index([createdAt])
+  @@index([bookingId])
 }
 
 model RateLimit {

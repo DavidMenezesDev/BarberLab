@@ -27,7 +27,10 @@ interface CatalogHomeProps {
 const CatalogHome = async ({ erro }: CatalogHomeProps) => {
   const session = await getServerSession(authOptions)
   const [barbershops, confirmedBookings] = await Promise.all([
-    db.barbershop.findMany({ orderBy: { name: "asc" } }),
+    db.barbershop.findMany({
+      where: { suspendedAt: null },
+      orderBy: { name: "asc" },
+    }),
     getConfirmedBookings(),
   ])
   const popularBarbershops = [...barbershops].reverse()

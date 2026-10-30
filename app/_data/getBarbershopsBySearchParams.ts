@@ -12,11 +12,12 @@ export const getBarbershopsBySearchParams = async (searchParams: {
   }
 
   if (searchParams.tag === "recomendados") {
-    return db.barbershop.findMany({})
+    return db.barbershop.findMany({ where: { suspendedAt: null } })
   }
 
   if (searchParams.tag === "popular") {
     return db.barbershop.findMany({
+      where: { suspendedAt: null },
       orderBy: {
         name: "desc",
       },
@@ -25,6 +26,7 @@ export const getBarbershopsBySearchParams = async (searchParams: {
 
   return db.barbershop.findMany({
     where: {
+      suspendedAt: null,
       OR: [
         searchParams?.title
           ? {

@@ -22,6 +22,7 @@ export const RESERVED_SLUGS = new Set([
   "tema-preview",
   "login",
   "manifest",
+  "master",
   "overview",
   "parceiros",
   "perfil",

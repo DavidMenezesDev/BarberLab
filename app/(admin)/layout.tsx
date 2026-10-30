@@ -1,7 +1,10 @@
 import { requireBarbershopAdmin } from "@/app/_lib/auth"
+import { getEntitlements } from "@/app/_lib/entitlements"
 import { isDemo, isSingleTenant } from "@/app/_lib/deployment"
 import { db } from "@/app/_lib/prisma"
 import { StaffRole } from "@prisma/client"
+import StatusScreen, { HomeButton } from "@/app/_components/status-screen"
+import { BanIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import AdminSidebar from "./_components/admin-sidebar"
@@ -24,7 +27,7 @@ const AdminLayout = async ({ children }: { children: React.ReactNode }) => {
     redirect("/entrar")
   }
 
-  const [barbershop, user] = await Promise.all([
+  const [barbershop, user, entitlements] = await Promise.all([
     db.barbershop.findUnique({
       where: { id: admin.barbershopId },
       select: { name: true, imageUrl: true },
@@ -33,10 +36,24 @@ const AdminLayout = async ({ children }: { children: React.ReactNode }) => {
       where: { id: admin.userId },
       select: { onboardingDoneAt: true },
     }),
+    getEntitlements(admin.barbershopId),
   ])
 
   if (!barbershop) {
     redirect("/?erro=barbearia-nao-encontrada")
+  }
+
+  if (entitlements?.suspended) {
+    return (
+      <StatusScreen
+        icon={<BanIcon className="h-7 w-7" />}
+        eyebrow="Acesso suspenso"
+        title="Barbearia suspensa"
+        description="O acesso a esta barbearia foi suspenso pela plataforma. Fale com o suporte do Barber Lab para regularizar."
+      >
+        <HomeButton>Voltar ao site</HomeButton>
+      </StatusScreen>
+    )
   }
 
   const identity = {
