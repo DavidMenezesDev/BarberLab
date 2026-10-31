@@ -98,6 +98,17 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
 
+# Imagens da Oracle Cloud trazem um REJECT no iptables antes das regras do ufw:
+# sem isto as portas 80/443 ficam fechadas mesmo com o ufw liberado.
+if iptables -S INPUT | grep -q 'REJECT --reject-with icmp-host-prohibited'; then
+  for porta in 80 443; do
+    iptables -C INPUT -p tcp -m state --state NEW --dport "$porta" -j ACCEPT 2>/dev/null \
+      || iptables -I INPUT 5 -p tcp -m state --state NEW --dport "$porta" -j ACCEPT
+  done
+  apt-get install -y iptables-persistent
+  netfilter-persistent save
+fi
+
 cat > /etc/fail2ban/jail.d/barberlab.local <<'EOF'
 [sshd]
 enabled = true
@@ -230,7 +241,7 @@ echo "==> Backup antes de migrar"
 /usr/local/bin/barberlab-backup || echo "[aviso] backup falhou (ok na primeira instalação)"
 
 echo "==> Instalando dependências"
-run "npm ci --no-audit --no-fund"
+run "npm ci --include=dev --no-audit --no-fund"
 echo "==> Aplicando migrations"
 run "npx prisma migrate deploy"
 echo "==> Build"
