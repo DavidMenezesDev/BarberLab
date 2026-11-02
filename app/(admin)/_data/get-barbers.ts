@@ -6,6 +6,7 @@ export interface AdminBarber {
   specialty: string
   imageUrl: string
   isActive: boolean
+  commissionPercent: number
 }
 
 export const getAdminBarbers = async (
@@ -20,6 +21,7 @@ export const getAdminBarbers = async (
       specialty: true,
       imageUrl: true,
       isActive: true,
+      commissionPercent: true,
     },
   })
 
@@ -27,5 +29,6 @@ export const getAdminBarbers = async (
     ...barber,
     specialty: barber.specialty ?? "",
     imageUrl: barber.imageUrl ?? "",
+    commissionPercent: Number(barber.commissionPercent),
   }))
 }

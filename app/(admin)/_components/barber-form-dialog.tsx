@@ -31,6 +31,7 @@ const EMPTY: BarberInput = {
   name: "",
   specialty: "",
   imageUrl: "",
+  commissionPercent: 0,
   isActive: true,
 }
 
@@ -60,6 +61,7 @@ const BarberFormDialog = ({
             name: barber.name,
             specialty: barber.specialty,
             imageUrl: barber.imageUrl,
+            commissionPercent: barber.commissionPercent,
             isActive: barber.isActive,
           }
         : EMPTY,
@@ -136,6 +138,39 @@ const BarberFormDialog = ({
                       previewClassName="h-32"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="commissionPercent"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Comissão (%)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={100}
+                      step="0.5"
+                      placeholder="50"
+                      value={Number.isNaN(field.value) ? "" : field.value}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === ""
+                            ? Number.NaN
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <p className="text-muted-foreground text-xs">
+                    Parte de cada atendimento concluído que fica com o barbeiro.
+                    O restante é da barbearia. Use 0 para não pagar comissão.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

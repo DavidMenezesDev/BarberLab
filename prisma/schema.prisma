@@ -218,18 +218,20 @@ model StaffInvite {
 }
 
 model Barber {
-  id           String     @id @default(uuid())
-  name         String
-  specialty    String?
-  imageUrl     String?
-  isActive     Boolean    @default(true)
-  barbershopId String
-  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
-  userId       String?
-  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  bookings     Booking[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                String     @id @default(uuid())
+  name              String
+  specialty         String?
+  imageUrl          String?
+  isActive          Boolean    @default(true)
+  // Parte do valor de cada atendimento concluído que fica com o barbeiro (0 a 100).
+  commissionPercent Decimal    @default(0) @db.Decimal(5, 2)
+  barbershopId      String
+  barbershop        Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings          Booking[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   @@unique([barbershopId, userId])
   @@index([barbershopId, isActive])
@@ -254,21 +256,27 @@ model BarbershopService {
 }
 
 model Booking {
-  id         String            @id @default(uuid())
-  customerId String
-  customer   Customer          @relation(fields: [customerId], references: [id])
-  serviceId  String
-  service    BarbershopService @relation(fields: [serviceId], references: [id])
-  barberId   String?
-  barber     Barber?           @relation(fields: [barberId], references: [id], onDelete: SetNull)
-  date       DateTime
-  status     BookingStatus     @default(CONFIRMED)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id                String            @id @default(uuid())
+  customerId        String
+  customer          Customer          @relation(fields: [customerId], references: [id])
+  serviceId         String
+  service           BarbershopService @relation(fields: [serviceId], references: [id])
+  barberId          String?
+  barber            Barber?           @relation(fields: [barberId], references: [id], onDelete: SetNull)
+  date              DateTime
+  status            BookingStatus     @default(CONFIRMED)
+  // Foto financeira gravada ao concluir o atendimento, para que mudar o preço
+  // ou a porcentagem depois não reescreva o histórico. Nulos fora de COMPLETED.
+  chargedAmount     Decimal?          @db.Decimal(10, 2)
+  commissionPercent Decimal?          @db.Decimal(5, 2)
+  commissionAmount  Decimal?          @db.Decimal(10, 2)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@index([serviceId, date])
   @@index([customerId, date])
   @@index([barberId, date])
+  @@index([status, date])
 }
 
 model ScheduleBlock {

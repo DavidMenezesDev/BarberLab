@@ -134,6 +134,9 @@ const BarbersManager = ({ barbers }: BarbersManagerProps) => {
                   <p className="text-muted-foreground truncate text-xs">
                     {barber.specialty || "Sem especialidade"}
                   </p>
+                  <p className="text-muted-foreground text-xs">
+                    Comissão: {barber.commissionPercent}%
+                  </p>
                   <div className="flex gap-1 pt-1">
                     <Button
                       size="icon"

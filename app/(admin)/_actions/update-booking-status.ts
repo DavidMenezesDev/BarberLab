@@ -2,10 +2,11 @@
 
 import { requireBarbershopAdmin } from "@/app/_lib/auth"
 import { db } from "@/app/_lib/prisma"
-import { BookingStatus } from "@prisma/client"
+import { BookingStatus, Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
+import { splitCommission } from "../_lib/commission"
 
 const schema = z.object({
   bookingId: z.string().uuid(),
@@ -28,22 +29,47 @@ export const updateBookingStatus = async (input: unknown) => {
     return { ok: false as const, error: "Dados inválidos." }
   }
 
-  const result = await db.booking.updateMany({
+  const booking = await db.booking.findFirst({
     where: {
       id: parsed.data.bookingId,
       // A visão geral age em qualquer unidade em que a pessoa atua.
       service: { barbershop: { members: { some: { userId: admin.userId } } } },
     },
-    data: { status: parsed.data.status },
+    select: {
+      status: true,
+      service: { select: { price: true } },
+      barber: { select: { commissionPercent: true } },
+    },
   })
 
-  if (result.count === 0) {
+  if (!booking) {
     return { ok: false as const, error: "Agendamento não encontrado." }
   }
+
+  const { status } = parsed.data
+  const data: Prisma.BookingUpdateInput = { status }
+
+  if (status !== BookingStatus.COMPLETED) {
+    // Sair de "concluído" desfaz o ganho: reabrir ou cancelar não paga ninguém.
+    data.chargedAmount = null
+    data.commissionPercent = null
+    data.commissionAmount = null
+  } else if (booking.status !== BookingStatus.COMPLETED) {
+    // A comissão é fixada aqui, com o preço e a porcentagem de agora.
+    const percent = Number(booking.barber?.commissionPercent ?? 0)
+    const split = splitCommission(Number(booking.service.price), percent)
+    data.chargedAmount = split.charged
+    data.commissionPercent = percent
+    data.commissionAmount = split.commission
+  }
+
+  await db.booking.update({ where: { id: parsed.data.bookingId }, data })
 
   revalidatePath("/dashboard")
   revalidatePath("/overview")
   revalidatePath("/schedule")
+  revalidatePath("/financeiro")
+  revalidatePath("/meus-ganhos")
   revalidatePath("/bookings")
 
   return { ok: true as const }

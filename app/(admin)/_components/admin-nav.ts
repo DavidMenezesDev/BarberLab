@@ -1,6 +1,7 @@
 import {
   BuildingIcon,
   CalendarRangeIcon,
+  HandCoinsIcon,
   LayoutDashboardIcon,
   PaletteIcon,
   ScissorsIcon,
@@ -48,6 +49,22 @@ export const ADMIN_NAV_ITEMS = [
     icon: UsersIcon,
   },
   {
+    href: "/financeiro",
+    tour: "tour-finance",
+    ownerOnly: true,
+    label: "Financeiro",
+    shortLabel: "Caixa",
+    icon: HandCoinsIcon,
+  },
+  {
+    href: "/meus-ganhos",
+    tour: "tour-earnings",
+    barberOnly: true,
+    label: "Meus ganhos",
+    shortLabel: "Ganhos",
+    icon: HandCoinsIcon,
+  },
+  {
     href: "/aparencia",
     tour: "tour-appearance",
     ownerOnly: true,
@@ -69,5 +86,6 @@ export const navItemsFor = (isOwner: boolean, multiUnit = false) =>
   ADMIN_NAV_ITEMS.filter(
     (item) =>
       (isOwner || !("ownerOnly" in item)) &&
+      (!isOwner || !("barberOnly" in item)) &&
       (multiUnit || !("multiUnitOnly" in item)),
   )
