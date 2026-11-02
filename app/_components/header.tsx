@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import Logo from "./logo"
 import { Card, CardContent } from "./ui/card"
 import { Button } from "./ui/button"
 import { MenuIcon, SearchIcon } from "lucide-react"
@@ -53,14 +53,7 @@ const Header = ({ singleTenant = false }: HeaderProps) => {
     <Card className="bg-card/95 sticky top-0 z-50 border-b backdrop-blur-sm">
       <CardContent className="flex flex-row items-center justify-between p-5 lg:px-8 lg:py-6">
         <Link href="/" className="flex items-center gap-2">
-          <Image
-            alt="Barber Lab"
-            src="/logo.png"
-            priority
-            height={18}
-            width={120}
-            className="h-auto w-auto lg:h-8"
-          />
+          <Logo />
         </Link>
 
         {/* Navegação Desktop */}

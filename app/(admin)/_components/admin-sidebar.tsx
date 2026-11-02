@@ -9,7 +9,7 @@ import { Button } from "@/app/_components/ui/button"
 import { cn } from "@/app/_lib/utils"
 import { ArrowLeftIcon, LogOutIcon } from "lucide-react"
 import { signOut } from "next-auth/react"
-import Image from "next/image"
+import Logo from "@/app/_components/logo"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { navItemsFor } from "./admin-nav"
@@ -43,14 +43,7 @@ const AdminSidebar = ({
     <aside className="bg-card fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r lg:flex">
       <div className="flex h-[73px] items-center border-b px-6">
         <Link href="/" className="flex items-center gap-2">
-          <Image
-            alt="Barber Lab"
-            src="/logo.png"
-            height={18}
-            width={120}
-            priority
-            className="h-auto w-auto"
-          />
+          <Logo />
         </Link>
       </div>
 
