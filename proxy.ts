@@ -53,6 +53,9 @@ export function proxy(request: NextRequest) {
   if (pathname === "/") {
     const url = request.nextUrl.clone()
     url.pathname = `/${slug}`
+    // Atrás do proxy TLS (Caddy) o x-forwarded-proto faz a URL sair como https,
+    // mas o Next escuta em http: com https o rewrite vira "externo" e quebra (500).
+    if (process.env.NODE_ENV === "production") url.protocol = "http:"
     return NextResponse.rewrite(url, { request: { headers: forwarded } })
   }
 
