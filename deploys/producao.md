@@ -51,7 +51,7 @@ Swap de 2G, ufw + regras de iptables (80/443), fail2ban, atualizações automát
 | `NODE_ENV=production` | modo produção |
 | `DATABASE_URL` | Postgres local (senha gerada) |
 | `NEXTAUTH_URL` | `https://<domínio>` (o app acusa erro se for localhost) |
-| `ROOT_DOMAIN` | (opcional) domínio raiz dos subdomínios por barbearia, ex.: `meudominio.com`. Exige DNS e certificado wildcard `*.meudominio.com` |
+| `ROOT_DOMAIN` | (opcional) domínio raiz dos subdomínios por barbearia, ex.: `meudominio.com`. Exige DNS `*.meudominio.com` apontando para a VPS. O certificado de cada subdomínio é emitido pelo Caddy na 1ª visita (on-demand), só se a barbearia existir (`/api/tls-ask`). Limite do Let's Encrypt: ~50 certificados novos/semana por domínio |
 | `NEXTAUTH_SECRET` | assina a sessão **e cifra as credenciais do WhatsApp no banco**. Não troque depois |
 | `SUPER_ADMIN_EMAIL/NAME/PASSWORD` | conta de super admin, criada na subida do app. Troque a senha no 1º login |
 
@@ -78,3 +78,5 @@ Backup automático: todo dia às 03:15, guardado 14 dias em `/var/backups/barber
 - **`husky: not found` / build sem typescript no `npm ci`**: o `NODE_ENV=production` faz o npm pular devDependencies; o deploy já usa `--include=dev`.
 - **`JWT_SESSION_ERROR: decryption operation failed` no log / erro ao logar**: o navegador tem cookie de sessão antigo (outro segredo). Apague os cookies do site ou use janela anônima.
 - **Trocar o `NEXTAUTH_SECRET`**: derruba todas as sessões e invalida as credenciais do WhatsApp salvas; só faça sabendo disso.
+
+- **Subdomínio com erro de certificado**: confira se a barbearia existe no banco e veja `sudo journalctl -u caddy -n 50`. A 1ª visita de cada subdomínio demora alguns segundos (emissão do certificado).

@@ -15,6 +15,7 @@
 #   ACME_EMAIL           e-mail para o certificado Let's Encrypt
 #   REPO_URL             repositório git (padrão: git@github.com:DavidMenezesDev/BarberLab.git)
 #   BRANCH               branch a publicar (padrão: main)
+#   ROOT_DOMAIN          (opcional) domínio raiz dos subdomínios por barbearia, ex.: elitesales.space
 #   SUPER_ADMIN_EMAIL    e-mail do super admin da plataforma (opcional)
 #   SUPER_ADMIN_NAME     nome do super admin (opcional)
 #   SUPER_ADMIN_PASSWORD senha do super admin (opcional; gerada se o e-mail for informado)
@@ -169,6 +170,7 @@ else
     echo "DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@127.0.0.1:5432/$DB_NAME"
     echo "NEXTAUTH_URL=https://$DOMAIN"
     echo "NEXTAUTH_SECRET=$AUTH_SECRET"
+    [[ -n "${ROOT_DOMAIN:-}" ]] && echo "ROOT_DOMAIN=$ROOT_DOMAIN"
     if [[ -n "${SUPER_ADMIN_EMAIL:-}" ]]; then
       SA_PASS="${SUPER_ADMIN_PASSWORD:-$(openssl rand -base64 18 | tr -d '\n=+/')}"
       echo "SUPER_ADMIN_EMAIL=$SUPER_ADMIN_EMAIL"
@@ -312,13 +314,33 @@ if ! command -v caddy >/dev/null; then
   apt-get update -y
   apt-get install -y caddy
 fi
+# Subdomínios por barbearia (ROOT_DOMAIN): certificado emitido na 1ª visita, só se o
+# app confirmar em /api/tls-ask que a barbearia existe.
+if [[ -n "${ROOT_DOMAIN:-}" ]]; then
+  GLOBAL_TLS="	on_demand_tls {
+		ask http://127.0.0.1:$APP_PORT/api/tls-ask
+	}"
+  TENANT_BLOCK="
+https:// {
+	tls {
+		on_demand
+	}
+	import app
+}"
+else
+  GLOBAL_TLS=""
+  TENANT_BLOCK=""
+fi
 cat > /etc/caddy/Caddyfile <<EOF
 {
 	email $ACME_EMAIL
+$GLOBAL_TLS
 }
 
-$DOMAIN {
+(app) {
 	encode zstd gzip
+	@tlsask path /api/tls-ask
+	respond @tlsask 404
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
@@ -327,6 +349,11 @@ $DOMAIN {
 	}
 	reverse_proxy 127.0.0.1:$APP_PORT
 }
+
+$DOMAIN {
+	import app
+}
+$TENANT_BLOCK
 EOF
 systemctl enable caddy
 systemctl restart caddy
