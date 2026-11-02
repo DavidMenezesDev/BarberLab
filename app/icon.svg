@@ -1,23 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FF6A4F" />
-      <stop offset="1" stop-color="#F84F39" />
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="9" fill="url(#g)" />
-  <g
-    transform="translate(4 4)"
-    fill="none"
-    stroke="#FFFFFF"
-    stroke-width="2.6"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <circle cx="6" cy="6" r="3" />
-    <circle cx="6" cy="18" r="3" />
-    <path d="M8.12 8.12 12 12" />
-    <path d="M20 4 8.12 15.88" />
-    <path d="M14.8 14.8 20 20" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#F84F39"/>
+  <circle cx="11" cy="10.5" r="3" fill="none" stroke="#fff" stroke-width="2.2"/>
+  <circle cx="11" cy="21.5" r="3" fill="none" stroke="#fff" stroke-width="2.2"/>
+  <path d="m13.4 12.2 11 8m-11 0 11-8" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
 </svg>
