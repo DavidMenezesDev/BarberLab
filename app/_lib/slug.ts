@@ -1,11 +1,16 @@
 import { db } from "./prisma"
+import { SLUG_FORMAT_MESSAGE, SLUG_PATTERN, slugify } from "./slug-format"
+
+export { slugify }
 
 // Primeiro segmento de URL que já pertence ao sistema: uma barbearia com
 // esse nome não pode ocupar o endereço.
 export const RESERVED_SLUGS = new Set([
   "admin",
   "api",
+  "app",
   "apple-icon",
+  "barber",
   "barbers",
   "barbershops",
   "bookings",
@@ -34,16 +39,33 @@ export const RESERVED_SLUGS = new Set([
   "sitemap",
   "sobre",
   "termos",
+  "www",
 ])
 
-export const slugify = (text: string) =>
-  text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 50)
+// O endereço é compartilhado com as marcas de várias unidades.
+export const isSlugAvailable = async (slug: string, excludeId?: string) => {
+  const [taken, takenByGroup] = await Promise.all([
+    db.barbershop.findUnique({ where: { slug }, select: { id: true } }),
+    db.barbershopGroup.findUnique({ where: { slug }, select: { id: true } }),
+  ])
+
+  return !takenByGroup && (!taken || taken.id === excludeId)
+}
+
+// Formato, nomes reservados e unicidade. Devolve o motivo quando não serve.
+export const checkSlug = async (
+  slug: string,
+  excludeId?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  if (!SLUG_PATTERN.test(slug)) {
+    return { ok: false, error: SLUG_FORMAT_MESSAGE }
+  }
+  if (RESERVED_SLUGS.has(slug) || !(await isSlugAvailable(slug, excludeId))) {
+    return { ok: false, error: "Este endereço já está em uso. Escolha outro." }
+  }
+
+  return { ok: true }
+}
 
 // `excludeId` deixa a própria barbearia manter o endereço ao salvar.
 export const uniqueBarbershopSlug = async (
@@ -55,12 +77,7 @@ export const uniqueBarbershopSlug = async (
 
   for (let attempt = 0; attempt < 20; attempt++) {
     const slug = attempt === 0 ? base : `${base}-${attempt + 1}`
-    // O endereço é compartilhado com as marcas de várias unidades.
-    const [taken, takenByGroup] = await Promise.all([
-      db.barbershop.findUnique({ where: { slug }, select: { id: true } }),
-      db.barbershopGroup.findUnique({ where: { slug }, select: { id: true } }),
-    ])
-    if (!takenByGroup && (!taken || taken.id === excludeId)) return slug
+    if (await isSlugAvailable(slug, excludeId)) return slug
   }
 
   return `${base}-${Math.random().toString(36).slice(2, 8)}`

@@ -3,7 +3,7 @@
 import { getCurrentCustomerId } from "../_lib/customer-session"
 import { db } from "../_lib/prisma"
 
-export const getConfirmedBookings = async () => {
+export const getConfirmedBookings = async (barbershopId?: string) => {
   const customerId = await getCurrentCustomerId()
   if (!customerId) return []
   const bookings = await db.booking.findMany({
@@ -12,6 +12,7 @@ export const getConfirmedBookings = async () => {
       date: {
         gte: new Date(),
       },
+      ...(barbershopId && { service: { barbershopId } }),
     },
     select: {
       id: true,

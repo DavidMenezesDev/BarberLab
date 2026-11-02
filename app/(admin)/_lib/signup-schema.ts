@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { optionalImageUrlSchema } from "@/app/_lib/images"
+import { SLUG_FORMAT_MESSAGE, SLUG_PATTERN } from "@/app/_lib/slug-format"
 import { barbershopProfileSchema, featuresSchema } from "./barbershop-schema"
 
 export const PLACEHOLDER_BARBERSHOP_IMAGE = "/placeholder-barbershop.svg"
@@ -34,6 +35,11 @@ export const signupSchema = barbershopProfileSchema
         /^\+?[\d\s().-]{8,20}$/,
         "Seu telefone é inválido. Use algo como (11) 99999-9999.",
       ),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(SLUG_PATTERN, SLUG_FORMAT_MESSAGE),
     city: z.string().trim().min(2, "Informe a cidade.").max(80),
     document: documento,
     imageUrl: optionalImageUrlSchema,

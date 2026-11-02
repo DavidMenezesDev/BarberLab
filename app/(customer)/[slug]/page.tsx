@@ -5,11 +5,14 @@ import { db } from "@/app/_lib/prisma"
 import { SINGLE_BARBERSHOP_ID, isSingleTenant } from "@/app/_lib/deployment"
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
+import { getTenantSlug } from "@/app/_lib/tenant"
 import BarbershopDetail from "../_components/barbershop-detail"
+import TenantHome from "../_components/tenant-home"
 import UnitPicker from "../_components/unit-picker"
 
 interface BarbershopPageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ erro?: string }>
 }
 
 export async function generateMetadata({
@@ -36,13 +39,20 @@ export async function generateMetadata({
   }
 }
 
-export default async function BarbershopPage({ params }: BarbershopPageProps) {
+export default async function BarbershopPage({
+  params,
+  searchParams,
+}: BarbershopPageProps) {
   const { slug } = await params
+  const { erro } = await searchParams
+  const tenantSlug = await getTenantSlug()
 
   const barbershop = await getBarbershopsById(slug)
   if (!barbershop) {
     const group = await getGroupBySlug(slug)
     if (!group || isSingleTenant || group.barbershops.length === 0) notFound()
+    // Dentro de um subdomínio só aparece a marca dele.
+    if (tenantSlug && tenantSlug !== slug) notFound()
 
     // Com uma unidade só, não há o que escolher.
     if (group.barbershops.length === 1) {
@@ -61,6 +71,27 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
   if (slug !== barbershop.slug) redirect(`/${barbershop.slug}`)
 
   const openingHours = await getBarbershopOpeningHours(barbershop.id)
+
+  if (tenantSlug) {
+    if (tenantSlug === barbershop.slug) {
+      return (
+        <TenantHome
+          barbershop={barbershop}
+          openingHours={openingHours}
+          erro={erro}
+        />
+      )
+    }
+
+    // Unidade de uma marca: só abre dentro do subdomínio da própria marca.
+    const brand = barbershop.groupId
+      ? await db.barbershopGroup.findUnique({
+          where: { id: barbershop.groupId },
+          select: { slug: true },
+        })
+      : null
+    if (brand?.slug !== tenantSlug) notFound()
+  }
 
   const group = barbershop.groupId
     ? await db.barbershopGroup.findUnique({

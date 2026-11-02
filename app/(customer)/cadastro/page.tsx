@@ -38,7 +38,7 @@ const Cadastro = async () => {
 
         <Card className="mt-8">
           <CardContent className="p-5 lg:p-6">
-            <SignupForm />
+            <SignupForm rootDomain={process.env.ROOT_DOMAIN?.trim() || null} />
 
             <p className="text-muted-foreground mt-6 text-center text-xs">
               Já tem cadastro?{" "}

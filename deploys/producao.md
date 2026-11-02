@@ -51,6 +51,7 @@ Swap de 2G, ufw + regras de iptables (80/443), fail2ban, atualizações automát
 | `NODE_ENV=production` | modo produção |
 | `DATABASE_URL` | Postgres local (senha gerada) |
 | `NEXTAUTH_URL` | `https://<domínio>` (o app acusa erro se for localhost) |
+| `ROOT_DOMAIN` | (opcional) domínio raiz dos subdomínios por barbearia, ex.: `meudominio.com`. Exige DNS e certificado wildcard `*.meudominio.com` |
 | `NEXTAUTH_SECRET` | assina a sessão **e cifra as credenciais do WhatsApp no banco**. Não troque depois |
 | `SUPER_ADMIN_EMAIL/NAME/PASSWORD` | conta de super admin, criada na subida do app. Troque a senha no 1º login |
 

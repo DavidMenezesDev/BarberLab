@@ -5,7 +5,6 @@ import { db } from "@/app/_lib/prisma"
 import { revalidatePath } from "next/cache"
 import { barbershopProfileSchema } from "../_lib/barbershop-schema"
 import { consumeRateLimit, rateLimitError } from "@/app/_lib/rate-limit"
-import { uniqueBarbershopSlug } from "@/app/_lib/slug"
 
 export const saveBarbershopProfile = async (input: unknown) => {
   const admin = await requireBarbershopOwner()
@@ -28,14 +27,12 @@ export const saveBarbershopProfile = async (input: unknown) => {
 
   const { phones, features, ...rest } = parsed.data
 
-  // O endereço público acompanha o nome da barbearia.
-  const slug = await uniqueBarbershopSlug(rest.name, admin.barbershopId)
-
-  await db.barbershop.update({
+  // O endereço público foi escolhido no cadastro: renomear a barbearia não o troca.
+  const { slug } = await db.barbershop.update({
     where: { id: admin.barbershopId },
+    select: { slug: true },
     data: {
       ...rest,
-      slug,
       phones: phones.map((p) => p.trim()).filter(Boolean),
       features: features.map((f) => f.trim()).filter(Boolean),
     },

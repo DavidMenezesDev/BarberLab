@@ -1,14 +1,22 @@
 "use client"
 
-import { createBarbershop } from "@/app/(admin)/_actions/signup"
+import {
+  checkSlugAvailability,
+  createBarbershop,
+} from "@/app/(admin)/_actions/signup"
 import { Button } from "@/app/_components/ui/button"
 import ImageUploadField from "@/app/_components/image-upload-field"
 import { Input } from "@/app/_components/ui/input"
 import { Textarea } from "@/app/_components/ui/textarea"
+import {
+  SLUG_FORMAT_MESSAGE,
+  SLUG_PATTERN,
+  slugify,
+} from "@/app/_lib/slug-format"
 import { PlusIcon, Trash2Icon } from "lucide-react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 interface FieldProps {
@@ -28,7 +36,17 @@ const Field = ({ id, label, optional, children }: FieldProps) => (
   </div>
 )
 
-const SignupForm = () => {
+type SlugStatus =
+  | { state: "idle" }
+  | { state: "checking" }
+  | { state: "available" }
+  | { state: "invalid"; message: string }
+
+interface SignupFormProps {
+  rootDomain: string | null
+}
+
+const SignupForm = ({ rootDomain }: SignupFormProps) => {
   const router = useRouter()
   const [isSaving, startSaving] = useTransition()
   const [ownerName, setOwnerName] = useState("")
@@ -37,12 +55,49 @@ const SignupForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [ownerPhone, setOwnerPhone] = useState("")
   const [name, setName] = useState("")
+  const [slug, setSlug] = useState("")
+  // Enquanto o barbeiro não mexe no endereço, ele acompanha o nome.
+  const [slugEdited, setSlugEdited] = useState(false)
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>({ state: "idle" })
   const [document, setDocument] = useState("")
   const [city, setCity] = useState("")
   const [address, setAddress] = useState("")
   const [description, setDescription] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [phones, setPhones] = useState([""])
+
+  useEffect(() => {
+    if (!slug) {
+      setSlugStatus({ state: "idle" })
+      return
+    }
+    if (!SLUG_PATTERN.test(slug)) {
+      setSlugStatus({ state: "invalid", message: SLUG_FORMAT_MESSAGE })
+      return
+    }
+
+    setSlugStatus({ state: "checking" })
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const result = await checkSlugAvailability(slug)
+      if (cancelled) return
+      setSlugStatus(
+        result.ok
+          ? { state: "available" }
+          : { state: "invalid", message: result.error },
+      )
+    }, 400)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [slug])
+
+  const changeName = (value: string) => {
+    setName(value)
+    if (!slugEdited) setSlug(slugify(value))
+  }
 
   const setPhone = (index: number, value: string) =>
     setPhones((current) => current.map((p, i) => (i === index ? value : p)))
@@ -56,6 +111,7 @@ const SignupForm = () => {
         password,
         confirmPassword,
         name,
+        slug,
         document,
         city,
         address,
@@ -162,8 +218,47 @@ const SignupForm = () => {
             id="cad-nome"
             maxLength={80}
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => changeName(event.target.value)}
           />
+        </Field>
+
+        <Field id="cad-endereco-url" label="Endereço da sua página *">
+          <div className="flex items-center gap-2">
+            <Input
+              id="cad-endereco-url"
+              maxLength={50}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="minha-barbearia"
+              value={slug}
+              onChange={(event) => {
+                setSlugEdited(true)
+                setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"))
+              }}
+            />
+            {rootDomain && (
+              <span className="text-muted-foreground text-sm whitespace-nowrap">
+                .{rootDomain}
+              </span>
+            )}
+          </div>
+          <p
+            role="status"
+            className={
+              slugStatus.state === "invalid"
+                ? "text-destructive text-xs"
+                : slugStatus.state === "available"
+                  ? "text-xs text-emerald-600"
+                  : "text-muted-foreground text-xs"
+            }
+          >
+            {slugStatus.state === "checking" && "Verificando..."}
+            {slugStatus.state === "available" && "Endereço disponível."}
+            {slugStatus.state === "invalid" && slugStatus.message}
+            {slugStatus.state === "idle" &&
+              "É o endereço que seus clientes vão usar para agendar."}
+          </p>
         </Field>
 
         <Field id="cad-documento" label="CPF ou CNPJ" optional>
@@ -259,7 +354,11 @@ const SignupForm = () => {
         </Field>
       </section>
 
-      <Button className="w-full" onClick={enviar} disabled={isSaving}>
+      <Button
+        className="w-full"
+        onClick={enviar}
+        disabled={isSaving || slugStatus.state === "checking"}
+      >
         {isSaving ? "Criando..." : "Criar minha barbearia"}
       </Button>
     </div>
