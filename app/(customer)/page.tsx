@@ -3,7 +3,7 @@ import { getBarbershopOpeningHours } from "@/app/_data/get-opening-hours"
 import { SINGLE_BARBERSHOP_ID, isSingleTenant } from "@/app/_lib/deployment"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import CatalogHome from "./_components/catalog-home"
+import LandingHome from "./_components/landing-home"
 import TenantHome from "./_components/tenant-home"
 
 interface HomeProps {
@@ -26,7 +26,7 @@ const Home = async ({ searchParams }: HomeProps) => {
   const { erro } = await searchParams
 
   if (!isSingleTenant) {
-    return <CatalogHome erro={erro} />
+    return <LandingHome erro={erro} />
   }
 
   const barbershop = await getBarbershopsById(SINGLE_BARBERSHOP_ID!)
