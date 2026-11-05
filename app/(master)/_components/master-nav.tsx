@@ -3,6 +3,7 @@
 import { Button } from "@/app/_components/ui/button"
 import { cn } from "@/app/_lib/utils"
 import {
+  BarChart3Icon,
   BuildingIcon,
   GaugeIcon,
   LogOutIcon,
@@ -17,6 +18,7 @@ import { usePathname } from "next/navigation"
 
 const ITEMS = [
   { href: "/master", label: "Visão geral", icon: GaugeIcon, exact: true },
+  { href: "/master/analytics", label: "Analytics", icon: BarChart3Icon },
   { href: "/master/plans", label: "Planos", icon: TagIcon },
   { href: "/master/barbershops", label: "Barbearias", icon: BuildingIcon },
   { href: "/master/whatsapp", label: "WhatsApp", icon: MessageCircleIcon },

@@ -351,3 +351,30 @@ model Image {
   size        Int
   createdAt   DateTime @default(now())
 }
+
+// Analytics próprio da plataforma: um registro por interação (visita, clique,
+// evento de negócio). Sem IP e sem dados pessoais; o visitante é um id aleatório.
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  // PAGEVIEW | CLICK | EVENT
+  type        String
+  name        String?
+  path        String
+  referrer    String?
+  visitorId   String
+  sessionId   String
+  userId      String?
+  device      String?
+  browser     String?
+  os          String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  props       Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([name, createdAt])
+}

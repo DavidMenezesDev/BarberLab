@@ -1,5 +1,7 @@
 "use server"
 
+import { EVENTS } from "@/app/_lib/analytics/constants"
+import { trackServerEvent } from "@/app/_lib/analytics/track"
 import { hashPassword } from "@/app/_lib/password"
 import { db } from "@/app/_lib/prisma"
 import {
@@ -116,6 +118,8 @@ export const createBarbershop = async (input: unknown) => {
     }
     throw error
   }
+
+  await trackServerEvent(EVENTS.signupCompleted, { slug }, "/cadastro")
 
   revalidatePath("/barbershops")
   revalidatePath("/")

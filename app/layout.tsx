@@ -4,6 +4,7 @@ import "./globals.css"
 import { Toaster } from "./_components/ui/sonner"
 import AuthProvider from "./_providers/auth"
 import ProgressProvider from "./_components/progress-bar"
+import AnalyticsTracker from "./_components/analytics-tracker"
 import DemoBanner from "./_components/demo-banner"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
@@ -68,6 +69,7 @@ export default function RootLayout({
         <AuthProvider>
           <ProgressProvider>{children}</ProgressProvider>
         </AuthProvider>
+        <AnalyticsTracker />
         <Toaster />
         <SpeedInsights />
       </body>

@@ -13,6 +13,8 @@ import {
   getCurrentCustomerId,
   rememberCustomer,
 } from "../_lib/customer-session"
+import { EVENTS } from "./../_lib/analytics/constants"
+import { trackServerEvent } from "./../_lib/analytics/track"
 import { db } from "../_lib/prisma"
 import { notifyBookingCreated } from "../_lib/whatsapp/notify"
 import {
@@ -227,6 +229,9 @@ export const createBooking = async ({
   })
 
   await rememberCustomer(savedCustomer.id)
+  await trackServerEvent(EVENTS.bookingCreated, {
+    barbershopId: service.barbershopId,
+  })
 
   // Depois da resposta, para o cliente não esperar o provedor do WhatsApp.
   after(() => notifyBookingCreated(booking.id))

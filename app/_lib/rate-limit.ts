@@ -16,6 +16,7 @@ export const RATE_LIMITS = {
   login: { points: 8, duration: 900 },
   acceptInvite: { points: 10, duration: 600 },
   upload: { points: 20, duration: 600 },
+  analytics: { points: 240, duration: 60 },
 } as const
 
 export type RateLimitName = keyof typeof RATE_LIMITS
